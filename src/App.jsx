@@ -3,7 +3,9 @@ import iconLogo from './assets/icon.png'
 import splashLogo from './assets/splash.png'
 import SplashScreen from './SplashScreen'
 import { Ring, Confetti, Modal, Sheet, EmojiPick, sBtn, sBtnP, sBtnS, sInp, sLbl, sBtwn, sRow, sCard, sTab, sBdg, sH, sAv } from './components'
-import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet } from './constants'
+import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges } from './constants'
+import GrowthTimeline from './GrowthTimeline'
+import { ProfileScreen, RemindersScreen, AppearanceScreen, TempUnitsScreen, CalendarScreen, PhotoStorageScreen, BackupScreen, ContactScreen, RateScreen } from './Settings'
 
 const NAV = [
   ['greenhouse', '🌿', 'Greenhouse'],
@@ -15,6 +17,12 @@ const NAV = [
 
 export default function App() {
   const [spaceName, setSpaceName] = useState(() => ls('rr_space', null))
+  const [showSplash, setShowSplash] = useState(true)
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = ls('rr_darkmode', true)
+    setThemeColors(saved)
+    return saved
+  })
   const [plants, setPlants] = useState(() => ls('rr_plants', INIT_PLANTS))
   const [tab, setTab] = useState('greenhouse')
   const [roomFilter, setRoomFilter] = useState('All')
@@ -76,6 +84,20 @@ export default function App() {
   const photoRef = useRef()
   const jPhotoRef = useRef()
   const plantPhotoRef = useRef()
+  const [showProfile, setShowProfile] = useState(false)
+  const [showReminders, setShowReminders] = useState(false)
+  const [showAppearance, setShowAppearance] = useState(false)
+  const [showTempUnits, setShowTempUnits] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [showPhotoStorage, setShowPhotoStorage] = useState(false)
+  const [showBackup, setShowBackup] = useState(false)
+  const [showContact, setShowContact] = useState(false)
+  const [showRate, setShowRate] = useState(false)
+  const [profileBadges, setProfileBadges] = useState(() => ls('rr_profile_badges', []))
+  const [newBadges, setNewBadges] = useState([])
+  const [showNewBadges, setShowNewBadges] = useState(false)
+  const season = getSeason()
+  const seasonTheme = SEASONAL_THEMES[season]
 
   useEffect(() => { if (spaceName) lsSet('rr_space', spaceName) }, [spaceName])
   useEffect(() => { lsSet('rr_plants', plants) }, [plants])
@@ -83,7 +105,16 @@ export default function App() {
   useEffect(() => { if (locationTip) lsSet('rr_tip', locationTip) }, [locationTip])
   useEffect(() => { if (user) lsSet('rr_user', user) }, [user])
 
-  if (!spaceName) return <SplashScreen onComplete={name => setSpaceName(name)} />
+  // Show splash every time app opens
+  if (showSplash) {
+    return (
+      <SplashScreen
+        spaceName={spaceName}
+        onComplete={name => { setSpaceName(name); setShowSplash(false) }}
+        onAnimationDone={() => setShowSplash(false)}
+      />
+    )
+  }
 
   const sp = plants.find(p => p.id === selectedId) || null
   const filtered = roomFilter === 'All' ? plants : plants.filter(p => p.room === roomFilter)
@@ -94,13 +125,43 @@ export default function App() {
 
   // ── Plant actions ───────────────────────────────────────────────────────────
   function waterPlant(id) {
-    setPlants(p => p.map(x => x.id === id ? { ...x, lastWatered: new Date().toISOString(), waterStreak: (x.waterStreak || 0) + 1 } : x))
+    setPlants(p => {
+      const updated = p.map(x => x.id === id ? { ...x, lastWatered: new Date().toISOString(), waterStreak: (x.waterStreak || 0) + 1 } : x)
+      // Check profile badges after watering
+      const earned = checkProfileBadges(updated, profileBadges)
+      const fresh = earned.filter(b => !profileBadges.includes(b))
+      if (fresh.length > 0) {
+        setProfileBadges(earned)
+        lsSet('rr_profile_badges', earned)
+        setNewBadges(fresh)
+        setShowNewBadges(true)
+      }
+      return updated
+    })
     setWaterAnim(id)
     setTimeout(() => setWaterAnim(null), 700)
   }
   function updatePlant(id, fields) {
     const was = plants.find(p => p.id === id)
-    setPlants(p => p.map(x => x.id === id ? { ...x, ...fields } : x))
+    setPlants(p => {
+      const updated = p.map(x => {
+        if (x.id !== id) return x
+        const merged = { ...x, ...fields }
+        // Auto-earn plant badges
+        merged.badges = checkAutoEarnBadges(merged, p)
+        return merged
+      })
+      // Check profile badges too
+      const earned = checkProfileBadges(updated, profileBadges)
+      const fresh = earned.filter(b => !profileBadges.includes(b))
+      if (fresh.length > 0) {
+        setProfileBadges(earned)
+        lsSet('rr_profile_badges', earned)
+        setNewBadges(fresh)
+        setShowNewBadges(true)
+      }
+      return updated
+    })
     if (fields.mood === 'thriving' && was?.mood !== 'thriving') {
       setConfetti(true)
       setTimeout(() => setConfetti(false), 2800)
@@ -108,7 +169,13 @@ export default function App() {
   }
   function addPlant() {
     if (!newPlant.name) return
-    setPlants(p => [...p, { ...newPlant, id: Date.now(), lastWatered: null, mood: 'okay', pests: [], propagations: [], journal: [], lastFertilized: null, lastRepotted: null, waterStreak: 0, badges: [], milestones: [] }])
+    setPlants(p => {
+      const updated = [...p, { ...newPlant, id: Date.now(), lastWatered: null, mood: 'okay', pests: [], propagations: [], journal: [], lastFertilized: null, lastRepotted: null, waterStreak: 0, badges: [], milestones: [] }]
+      const earned = checkProfileBadges(updated, profileBadges)
+      const fresh = earned.filter(b => !profileBadges.includes(b))
+      if (fresh.length > 0) { setProfileBadges(earned); lsSet('rr_profile_badges', earned); setNewBadges(fresh); setShowNewBadges(true) }
+      return updated
+    })
     setNewPlant({ name: '', nickname: '', room: 'Living Room', species: '', waterFreqDays: 7, fertilizeFreqDays: 30, repotFreqDays: 365, notes: '', photo: null, emoji: '🌿', acquiredDate: '', rescueStory: '', giftedFrom: '' })
     setShowAddPlant(false)
   }
@@ -120,7 +187,21 @@ export default function App() {
   }
   function addProp() {
     if (!propInput.method || !sp) return
-    updatePlant(selectedId, { propagations: [...(sp.propagations || []), { ...propInput, id: Date.now(), date: new Date().toISOString(), status: 'Rooting' }] })
+    const newProp = { ...propInput, id: Date.now(), date: new Date().toISOString(), status: 'Rooting' }
+    updatePlant(selectedId, { propagations: [...(sp.propagations || []), newProp] })
+    // Cross-post to community swap board if available is checked
+    if (propInput.available) {
+      const swapEntry = {
+        id: Date.now() + 1,
+        author: user?.name || 'You',
+        avatar: sp.emoji || '🌿',
+        offering: `${sp.nickname || sp.name} cutting — ${propInput.method}`,
+        wanting: 'Open to trades!',
+        location: location?.label || 'Location not set',
+        fromPropLab: true,
+      }
+      setSwaps(sl => [swapEntry, ...sl])
+    }
     setPropInput({ method: '', notes: '', available: false }); setShowPropForm(false)
   }
   function addJournal(photo) {
@@ -198,6 +279,15 @@ export default function App() {
     setUser(u); setShowAuth(false); setAuthLoading(false)
   }
 
+  function toggleDarkMode() {
+    const next = !darkMode
+    setDarkMode(next)
+    setThemeColors(next)
+    lsSet('rr_darkmode', next)
+    document.body.style.background = next ? '#0d0c09' : '#f5f2ec'
+    document.body.style.color = next ? '#e8dfc8' : '#2a2015'
+  }
+
   // ── Shared layout pieces ────────────────────────────────────────────────────
   const navBar = (
     <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 680, background: C.navBg, borderTop: `1px solid ${C.border}`, display: 'flex', padding: '8px 4px env(safe-area-inset-bottom, 12px)', zIndex: 100 }}>
@@ -257,6 +347,26 @@ export default function App() {
     return (
       <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", maxWidth: 680, margin: '0 auto', padding: '0 0 80px', background: C.bg, minHeight: '100vh', color: C.text }}>
         <Confetti active={confetti} onDone={() => setConfetti(false)} />
+
+      {/* New badge notification */}
+      {showNewBadges && newBadges.length > 0 && (
+        <div style={{ position: 'fixed', top: 60, left: '50%', transform: 'translateX(-50%)', zIndex: 9000, background: C.bgCard, border: `1.5px solid ${C.accent}`, borderRadius: 16, padding: '14px 20px', maxWidth: 340, width: '90%', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.accent, marginBottom: 8 }}>🏅 Badge earned!</div>
+          {newBadges.map(bid => {
+            const b = PROFILE_BADGES.find(x => x.id === bid)
+            return b ? (
+              <div key={bid} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: 24 }}>{b.icon}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{b.label}</div>
+                  <div style={{ fontSize: 12, color: C.textMuted }}>{b.desc}</div>
+                </div>
+              </div>
+            ) : null
+          })}
+          <button style={{ ...sBtnP, width: '100%', padding: '9px', marginTop: 8, fontSize: 13 }} onClick={() => setShowNewBadges(false)}>Nice! 🌿</button>
+        </div>
+      )}
         <div style={{ padding: '0.9rem 1rem', borderBottom: `1px solid ${C.border}`, background: `linear-gradient(180deg, #1c1910 0%, ${C.bg} 100%)` }}>
           <div style={sBtwn}>
             <button style={{ ...sBtn, padding: '5px 12px', fontSize: 12 }} onClick={() => { setSelectedId(null); setPlantTab('overview') }}>← Back</button>
@@ -277,7 +387,7 @@ export default function App() {
         </div>
 
         <div style={{ display: 'flex', gap: 6, padding: '0.75rem 1rem', overflowX: 'auto', background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-          {['overview','care','memory','pests','propagations','journal'].map(t => (
+          {['overview','care','memory','pests','propagations','journal','timeline'].map(t => (
             <button key={t} style={{ ...sTab(plantTab === t), flexShrink: 0, fontSize: 11 }} onClick={() => setPlantTab(t)}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>
           ))}
         </div>
@@ -454,6 +564,10 @@ export default function App() {
             </div>
           )}
 
+          {plantTab === 'timeline' && (
+            <GrowthTimeline plant={sp} />
+          )}
+
           {plantTab === 'journal' && (
             <div>
               <div style={{ ...sH(15), marginBottom: 12 }}>Growth Journal 📖</div>
@@ -497,6 +611,17 @@ export default function App() {
   return (
     <div style={appStyle}>
       <Confetti active={confetti} onDone={() => setConfetti(false)} />
+
+      {/* Settings screens */}
+      {showProfile && <ProfileScreen user={user} onSave={u => { setUser(u); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
+      {showReminders && <RemindersScreen onClose={() => setShowReminders(false)} />}
+      {showAppearance && <AppearanceScreen onClose={() => setShowAppearance(false)} darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />}
+      {showTempUnits && <TempUnitsScreen onClose={() => setShowTempUnits(false)} />}
+      {showCalendar && <CalendarScreen plants={plants} onClose={() => setShowCalendar(false)} />}
+      {showPhotoStorage && <PhotoStorageScreen plants={plants} onClose={() => setShowPhotoStorage(false)} />}
+      {showBackup && <BackupScreen plants={plants} onClose={() => setShowBackup(false)} />}
+      {showContact && <ContactScreen onClose={() => setShowContact(false)} />}
+      {showRate && <RateScreen onClose={() => setShowRate(false)} />}
 
       {/* Modals */}
       {showAuth && (
@@ -597,10 +722,10 @@ export default function App() {
           <div style={sBtwn}><div style={sH(17)}>⚙️ Potting Shed</div><button style={sBtnS} onClick={() => setShowShed(false)}>✕</button></div>
           <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 16, fontStyle: 'italic' }}>This is where all the app settings live.</div>
           {[
-            { section: 'Account', items: [{ icon: '👤', label: 'Profile' }, { icon: '☁️', label: 'Backup & Sync' }, { icon: '📷', label: 'Photo Storage' }] },
-            { section: 'App Settings', items: [{ icon: '🔔', label: 'Reminders' }, { icon: '🌙', label: 'Appearance' }, { icon: '📅', label: 'Calendar' }, { icon: '🌡️', label: 'Temperature Units' }] },
+            { section: 'Account', items: [{ icon: '👤', label: 'Profile', fn: () => { setShowProfile(true); setShowShed(false) } }, { icon: '☁️', label: 'Backup & Sync', fn: () => { setShowBackup(true); setShowShed(false) } }, { icon: '📷', label: 'Photo Storage', fn: () => { setShowPhotoStorage(true); setShowShed(false) } }] },
+            { section: 'App Settings', items: [{ icon: '🔔', label: 'Reminders', fn: () => { setShowReminders(true); setShowShed(false) } }, { icon: '🌙', label: 'Appearance', fn: () => { setShowAppearance(true); setShowShed(false) } }, { icon: '📅', label: 'Calendar', fn: () => { setShowCalendar(true); setShowShed(false) } }, { icon: '🌡️', label: 'Temperature Units', fn: () => { setShowTempUnits(true); setShowShed(false) } }] },
             { section: 'Plant Tools', items: [{ icon: '🚑', label: 'Plant ER', fn: () => { setTab('planterr'); setShowShed(false) } }, { icon: '📖', label: 'Plant Journal', fn: () => { setTab('journal'); setShowShed(false) } }, { icon: '✂️', label: 'Propagation Lab' }, { icon: '⚖️', label: 'Plant Court', fn: () => { setShowCourt(true); setShowShed(false) } }] },
-            { section: 'Cozy Skull', items: [{ icon: '🖤', label: 'About Rooted', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '🌿', label: 'About Cozy Skull' }, { icon: '📬', label: 'Contact Support' }, { icon: '⭐', label: 'Rate Rooted' }] },
+            { section: 'Cozy Skull', items: [{ icon: '🖤', label: 'About Rooted', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '🌿', label: 'About Cozy Skull', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '📬', label: 'Contact Support', fn: () => { setShowContact(true); setShowShed(false) } }, { icon: '⭐', label: 'Rate Rooted', fn: () => { setShowRate(true); setShowShed(false) } }] },
           ].map(group => (
             <div key={group.section}>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', margin: '16px 0 8px' }}>{group.section}</div>
@@ -631,7 +756,16 @@ export default function App() {
       {/* ── GREENHOUSE ─────────────────────────────────────────────────────── */}
       {tab === 'greenhouse' && (
         <div style={{ padding: '12px 14px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
+          {/* Seasonal banner */}
+        <div style={{ background: seasonTheme.accent + '15', border: `1px solid ${seasonTheme.accent}33`, borderRadius: 12, padding: '8px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontSize: 16 }}>{season === 'spring' ? '🌸' : season === 'summer' ? '🌻' : season === 'autumn' ? '🍂' : '❄️'}</div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: seasonTheme.accent, letterSpacing: '1px', textTransform: 'uppercase' }}>{seasonTheme.name}</div>
+            <div style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic' }}>{seasonTheme.greeting[new Date().getDate() % 3]}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
             {[
               { icon: '🌱', val: plants.filter(p => p.mood === 'thriving').length, label: 'thriving', col: '#7ec850' },
               { icon: '💧', val: urgent.length, label: 'need water', col: '#5b9fd4' },

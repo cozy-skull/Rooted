@@ -1,5 +1,58 @@
 // ── Brand colors ─────────────────────────────────────────────────────────────
-export const C = {
+// C is set dynamically - default to dark, updated by App
+export let C = {
+  bg: '#0d0c09',
+  bgCard: '#1a1710',
+  bgInput: '#13110d',
+  bgSubtle: '#201d15',
+  border: '#2e2a1e',
+  borderAccent: '#4a4228',
+  text: '#e8dfc8',
+  textMuted: '#8a7d5a',
+  textFaint: '#3a3520',
+  accent: '#7ec850',
+  accentText: '#0d1a07',
+  gold: '#c8922a',
+  danger: '#2a1212',
+  dangerBorder: '#5a2020',
+  dangerText: '#e87070',
+  locBg: '#161410',
+  locBorder: '#3a3018',
+  locText: '#a89a6a',
+  navBg: '#080806',
+  lavender: '#9a7ab8',
+}
+
+export function setThemeColors(isDark) {
+  const src = isDark ? DARK : LIGHT
+  Object.keys(src).forEach(k => { C[k] = src[k] })
+}
+
+// ── Light mode colors ────────────────────────────────────────────────────────
+export const LIGHT = {
+  bg: '#f5f2ec',
+  bgCard: '#ffffff',
+  bgInput: '#ede9e0',
+  bgSubtle: '#ede9e0',
+  border: '#d8d0bc',
+  borderAccent: '#b8a888',
+  text: '#2a2015',
+  textMuted: '#7a6a48',
+  textFaint: '#c0b090',
+  accent: '#5a9e35',
+  accentText: '#ffffff',
+  gold: '#a07418',
+  danger: '#fce8e8',
+  dangerBorder: '#e8b0b0',
+  dangerText: '#c03030',
+  locBg: '#eef5e8',
+  locBorder: '#b8d8a0',
+  locText: '#4a7030',
+  navBg: '#ffffff',
+  lavender: '#7060a0',
+}
+
+export const DARK = {
   bg: '#0d0c09',
   bgCard: '#1a1710',
   bgInput: '#13110d',
@@ -199,4 +252,131 @@ export function ls(key, fallback) {
 
 export function lsSet(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)) } catch {}
+}
+
+// ── Badge auto-earn logic ─────────────────────────────────────────────────────
+export function checkAutoEarnBadges(plant, allPlants) {
+  const earned = new Set(plant.badges || [])
+
+  // 1 Year Strong — acquired over 365 days ago
+  if (plant.acquiredDate) {
+    const days = Math.floor((Date.now() - new Date(plant.acquiredDate)) / 86400000)
+    if (days >= 365) earned.add('one_year')
+  }
+
+  // Thriving — mood is thriving
+  if (plant.mood === 'thriving') earned.add('thriving')
+  else earned.delete('thriving')
+
+  // Pest Free — no active pests
+  const activePests = (plant.pests || []).filter(p => !p.treated)
+  if (activePests.length === 0 && (plant.pests || []).length > 0) earned.add('pest_free')
+
+  // Made Babies — has propagations
+  if ((plant.propagations || []).length > 0) earned.add('propagated')
+
+  // Well Documented — 5+ journal entries
+  if ((plant.journal || []).length >= 5) earned.add('documented')
+
+  // Rescue Story — has a rescue story written
+  if (plant.rescueStory && plant.rescueStory.length > 20) earned.add('rescue')
+
+  // Well Fed — has been fertilized at least once
+  if (plant.lastFertilized) earned.add('well_fed')
+
+  return Array.from(earned)
+}
+
+// ── Profile badge auto-earn ───────────────────────────────────────────────────
+export function checkProfileBadges(plants, existingBadges) {
+  const earned = new Set(existingBadges || [])
+
+  if (plants.length >= 1) earned.add('first_plant')
+  if (plants.length >= 5) earned.add('gang_5')
+  if (plants.length >= 10) earned.add('gang_10')
+
+  // Check watering streaks
+  const maxStreak = Math.max(...plants.map(p => p.waterStreak || 0), 0)
+  if (maxStreak >= 7) earned.add('streak_7')
+  if (maxStreak >= 30) earned.add('streak_30')
+
+  // Propagation wizard — any plant has propagations
+  if (plants.some(p => (p.propagations || []).length > 0)) earned.add('propagator')
+
+  // Pest slayer — any plant has treated pests
+  if (plants.some(p => (p.pests || []).some(pest => pest.treated))) earned.add('pest_slayer')
+
+  // Root keeper — any plant acquired 2+ years ago
+  if (plants.some(p => {
+    if (!p.acquiredDate) return false
+    return Math.floor((Date.now() - new Date(p.acquiredDate)) / 86400000) >= 730
+  })) earned.add('root_keeper')
+
+  // Brought back from dead — any plant recovered from crisis
+  if (plants.some(p => p.rescueStory && p.rescueStory.length > 20)) earned.add('resurrection')
+
+  return Array.from(earned)
+}
+
+export const PROFILE_BADGES = [
+  { id: 'first_plant',  icon: '🌱', label: 'First Roots',            desc: 'Added your first plant' },
+  { id: 'gang_5',       icon: '🌿', label: 'Growing Gang',           desc: '5+ plants collected' },
+  { id: 'gang_10',      icon: '🪴', label: 'Full Jungle',            desc: '10+ plants — committed' },
+  { id: 'streak_7',     icon: '💧', label: '7-Day Streak',           desc: 'Watered on schedule 7 days' },
+  { id: 'streak_30',    icon: '⚡', label: '30-Day Streak',          desc: '30 days consistent care' },
+  { id: 'propagator',   icon: '✂️', label: 'Propagation Wizard',     desc: 'First propagation logged' },
+  { id: 'pest_slayer',  icon: '🛡️', label: 'Pest Slayer',            desc: 'Treated and resolved a pest' },
+  { id: 'plant_sitter', icon: '🏡', label: 'Plant Sitter',           desc: 'Cared for a friend's plants' },
+  { id: 'root_keeper',  icon: '🖤', label: 'Root Keeper',            desc: 'Long-term plant parent (2+ years)' },
+  { id: 'resurrection', icon: '💀', label: 'Brought Back From Dead', desc: 'Plant recovered from near-death' },
+  { id: 'watered_all',  icon: '☕', label: 'Watered Everything',     desc: 'All plants on schedule' },
+  { id: 'legendary',    icon: '🌙', label: 'Cozy Skull Legend',      desc: 'Gifted by a friend — highest honor' },
+]
+
+// ── Seasonal themes ───────────────────────────────────────────────────────────
+export function getSeason() {
+  const m = new Date().getMonth() // 0-11
+  if (m >= 2 && m <= 4) return 'spring'
+  if (m >= 5 && m <= 7) return 'summer'
+  if (m >= 8 && m <= 10) return 'autumn'
+  return 'winter'
+}
+
+export const SEASONAL_THEMES = {
+  spring: {
+    name: 'Spring Bloom',
+    accent: '#a0c840',
+    gold: '#c8a020',
+    lavender: '#c080c0',
+    bgCard: '#171814',
+    border: '#2a2e20',
+    greeting: ['New growth is coming.', 'Spring into plant care.', 'Bloom season is here.'],
+  },
+  summer: {
+    name: 'Summer Garden',
+    accent: '#7ec850',
+    gold: '#e8a020',
+    lavender: '#9a7ab8',
+    bgCard: '#1a1710',
+    border: '#2e2a1e',
+    greeting: ['Long days, happy plants.', 'Peak growing season.', 'Sun-soaked and thriving.'],
+  },
+  autumn: {
+    name: 'Autumn Harvest',
+    accent: '#c8922a',
+    gold: '#d4641a',
+    lavender: '#9a6080',
+    bgCard: '#1a1510',
+    border: '#2e2018',
+    greeting: ['Time to slow down and tend.', 'Cozy season for plants.', 'Harvest what you've grown.'],
+  },
+  winter: {
+    name: 'Winter Rest',
+    accent: '#70a8c8',
+    gold: '#a0b8c8',
+    lavender: '#8090b8',
+    bgCard: '#141618',
+    border: '#202428',
+    greeting: ['Rest season. Water less.', 'Dormancy is self-care.', 'Quiet growth underground.'],
+  },
 }
