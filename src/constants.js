@@ -326,7 +326,7 @@ export const PROFILE_BADGES = [
   { id: 'streak_30',    icon: '⚡', label: '30-Day Streak',          desc: '30 days consistent care' },
   { id: 'propagator',   icon: '✂️', label: 'Propagation Wizard',     desc: 'First propagation logged' },
   { id: 'pest_slayer',  icon: '🛡️', label: 'Pest Slayer',            desc: 'Treated and resolved a pest' },
-  { id: 'plant_sitter', icon: '🏡', label: 'Plant Sitter',           desc: 'Cared for a friend's plants' },
+  { id: 'plant_sitter', icon: '🏡', label: 'Plant Sitter',           desc: 'Cared for a friend\'s plants' },
   { id: 'root_keeper',  icon: '🖤', label: 'Root Keeper',            desc: 'Long-term plant parent (2+ years)' },
   { id: 'resurrection', icon: '💀', label: 'Brought Back From Dead', desc: 'Plant recovered from near-death' },
   { id: 'watered_all',  icon: '☕', label: 'Watered Everything',     desc: 'All plants on schedule' },
@@ -368,7 +368,7 @@ export const SEASONAL_THEMES = {
     lavender: '#9a6080',
     bgCard: '#1a1510',
     border: '#2e2018',
-    greeting: ['Time to slow down and tend.', 'Cozy season for plants.', 'Harvest what you've grown.'],
+    greeting: ['Time to slow down and tend.', 'Cozy season for plants.', "Harvest what you've grown."],
   },
   winter: {
     name: 'Winter Rest',
