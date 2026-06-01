@@ -6,6 +6,9 @@ import { Ring, Confetti, Modal, Sheet, EmojiPick, sBtn, sBtnP, sBtnS, sInp, sLbl
 import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges } from './constants'
 import GrowthTimeline from './GrowthTimeline'
 import { AboutRooted, AboutCozySkull } from './AboutPages'
+import { RecoveryMode, PhotoDiagnosis } from './RecoveryMode'
+import { MemorialGarden, moveToMemorial } from './MemorialGarden'
+import { WateringZones } from './WateringZones'
 import { ProfileScreen, RemindersScreen, AppearanceScreen, TempUnitsScreen, CalendarScreen, PhotoStorageScreen, BackupScreen, ContactScreen, RateScreen } from './Settings'
 
 const NAV = [
@@ -95,6 +98,9 @@ export default function App() {
   const [showBackup, setShowBackup] = useState(false)
   const [showContact, setShowContact] = useState(false)
   const [showRate, setShowRate] = useState(false)
+  const [showMemorial, setShowMemorial] = useState(false)
+  const [showZones, setShowZones] = useState(false)
+  const [showPhotoDiagnosis, setShowPhotoDiagnosis] = useState(false)
   const [profileBadges, setProfileBadges] = useState(() => ls('rr_profile_badges', []))
   const [newBadges, setNewBadges] = useState([])
   const [showNewBadges, setShowNewBadges] = useState(false)
@@ -187,6 +193,21 @@ export default function App() {
     updatePlant(selectedId, { pests: [...(sp.pests || []), { ...pestInput, id: Date.now(), date: new Date().toISOString(), treated: false, lastSprayed: null, sprayFreq: null }] })
     setPestInput({ type: '', treatment: '' }); setShowPestForm(false)
   }
+  function graduateFromRecovery(id) {
+    updatePlant(id, {
+      mood: 'thriving',
+      recovery: { ...((plants.find(p=>p.id===id)||{}).recovery||{}), active: false, recoveredDate: new Date().toISOString() }
+    })
+    setConfetti(true)
+    setTimeout(() => setConfetti(false), 2800)
+  }
+
+  function sendToMemorial(plant) {
+    moveToMemorial(plant)
+    setPlants(p => p.filter(x => x.id !== plant.id))
+    setSelectedId(null)
+  }
+
   function addProp() {
     if (!propInput.method || !sp) return
     const newProp = { ...propInput, id: Date.now(), date: new Date().toISOString(), status: 'Rooting' }
@@ -389,7 +410,7 @@ export default function App() {
         </div>
 
         <div style={{ display: 'flex', gap: 6, padding: '0.75rem 1rem', overflowX: 'auto', background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-          {['overview','care','memory','pests','propagations','journal','timeline'].map(t => (
+          {['overview','care','memory','pests','recovery','propagations','journal','timeline'].map(t => (
             <button key={t} style={{ ...sTab(plantTab === t), flexShrink: 0, fontSize: 11 }} onClick={() => setPlantTab(t)}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>
           ))}
         </div>
@@ -536,6 +557,51 @@ export default function App() {
             </div>
           )}
 
+          {plantTab === 'recovery' && (
+            <div>
+              {showPhotoDiagnosis && (
+                <PhotoDiagnosis
+                  plant={sp}
+                  onResult={({ photo, diagnosis }) => {
+                    updatePlant(sp.id, {
+                      mood: 'crisis',
+                      recovery: {
+                        ...(sp.recovery || {}),
+                        active: true,
+                        startDate: (sp.recovery||{}).startDate || new Date().toISOString(),
+                        diagnosis,
+                        diagnosisPhoto: photo,
+                      }
+                    })
+                  }}
+                  onClose={() => setShowPhotoDiagnosis(false)}
+                />
+              )}
+              {!(sp.recovery && sp.recovery.active) ? (
+                <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                  <div style={{ fontSize: 48, marginBottom: 14 }}>🏥</div>
+                  <div style={{ ...sH(16), marginBottom: 8 }}>Recovery Mode</div>
+                  <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>
+                    When a plant is struggling, move it into Recovery Mode. Track treatments, progress photos, and the full recovery timeline.
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button style={sBtnP} onClick={() => {
+                      updatePlant(sp.id, { mood: 'crisis', recovery: { active: true, startDate: new Date().toISOString(), checkIns: [] } })
+                    }}>Start Recovery Mode</button>
+                    <button style={sBtn} onClick={() => setShowPhotoDiagnosis(true)}>📸 Diagnose with photo</button>
+                  </div>
+                </div>
+              ) : (
+                <RecoveryMode
+                  plant={sp}
+                  onUpdate={updatePlant}
+                  onGraduate={() => graduateFromRecovery(sp.id)}
+                  onMemorialGarden={() => sendToMemorial(sp)}
+                />
+              )}
+            </div>
+          )}
+
           {plantTab === 'propagations' && (
             <div>
               <div style={sBtwn}><div style={sH(15)}>Propagation Lab ✂️</div><button style={sBtnP} onClick={() => setShowPropForm(true)}>+ New</button></div>
@@ -613,6 +679,9 @@ export default function App() {
   return (
     <div style={appStyle}>
       <Confetti active={confetti} onDone={() => setConfetti(false)} />
+
+      {showMemorial && <MemorialGarden onClose={() => setShowMemorial(false)} />}
+      {showZones && <WateringZones plants={plants} onUpdatePlant={updatePlant} onClose={() => setShowZones(false)} />}
 
       {/* Settings screens */}
       {showProfile && <ProfileScreen user={user} onSave={u => { setUser(u); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
@@ -724,7 +793,7 @@ export default function App() {
           {[
             { section: 'Account', items: [{ icon: '👤', label: 'Profile', fn: () => { setShowProfile(true); setShowShed(false) } }, { icon: '☁️', label: 'Backup & Sync', fn: () => { setShowBackup(true); setShowShed(false) } }, { icon: '📷', label: 'Photo Storage', fn: () => { setShowPhotoStorage(true); setShowShed(false) } }] },
             { section: 'App Settings', items: [{ icon: '🔔', label: 'Reminders', fn: () => { setShowReminders(true); setShowShed(false) } }, { icon: '🌙', label: 'Appearance', fn: () => { setShowAppearance(true); setShowShed(false) } }, { icon: '📅', label: 'Calendar', fn: () => { setShowCalendar(true); setShowShed(false) } }, { icon: '🌡️', label: 'Temperature Units', fn: () => { setShowTempUnits(true); setShowShed(false) } }] },
-            { section: 'Plant Tools', items: [{ icon: '🚑', label: 'Plant ER', fn: () => { setTab('planterr'); setShowShed(false) } }, { icon: '📖', label: 'Plant Journal', fn: () => { setTab('journal'); setShowShed(false) } }, { icon: '✂️', label: 'Propagation Lab' }, { icon: '⚖️', label: 'Plant Court', fn: () => { setShowCourt(true); setShowShed(false) } }] },
+            { section: 'Plant Tools', items: [{ icon: '🚑', label: 'Plant ER', fn: () => { setTab('planterr'); setShowShed(false) } }, { icon: '📖', label: 'Plant Journal', fn: () => { setTab('journal'); setShowShed(false) } }, { icon: '✂️', label: 'Propagation Lab' }, { icon: '⚖️', label: 'Plant Court', fn: () => { setShowCourt(true); setShowShed(false) } }, { icon: '💧', label: 'Watering Zones', fn: () => { setShowZones(true); setShowShed(false) } }, { icon: '🪦', label: 'Memorial Garden', fn: () => { setShowMemorial(true); setShowShed(false) } }] },
             { section: 'Cozy Skull', items: [{ icon: '🖤', label: 'About Rooted', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '🌿', label: 'About Cozy Skull', fn: () => { setShowCozySkull(true); setShowShed(false) } }, { icon: '📬', label: 'Contact Support', fn: () => { setShowContact(true); setShowShed(false) } }, { icon: '⭐', label: 'Rate Rooted', fn: () => { setShowRate(true); setShowShed(false) } }] },
           ].map(group => (
             <div key={group.section}>
@@ -762,6 +831,27 @@ export default function App() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: seasonTheme.accent, letterSpacing: '1px', textTransform: 'uppercase' }}>{seasonTheme.name}</div>
             <div style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic' }}>{seasonTheme.greeting[new Date().getDate() % 3]}</div>
+          </div>
+        </div>
+
+        {/* How's the gang doing */}
+        <div style={sCard({ marginBottom: 12, padding: '12px 14px' })}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 10 }}>How's the gang doing?</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {[
+              { icon: '🌱', val: plants.filter(p => p.mood === 'thriving').length, label: 'Thriving', col: '#7ec850' },
+              { icon: '💧', val: urgent.length, label: 'Needs Water', col: '#5b9fd4' },
+              { icon: '🎭', val: plants.filter(p => p.mood === 'struggling').length, label: 'Being Dramatic', col: '#d4934a' },
+              { icon: '🏥', val: plants.filter(p => p.recovery && p.recovery.active).length, label: 'In Plant ER', col: '#c94f4f' },
+            ].map((s, i) => (
+              <div key={i} style={{ background: C.bgSubtle, borderRadius: 10, padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>{s.icon}</span>
+                <div>
+                  <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 20, fontWeight: 700, color: s.col, lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontSize: 10, color: C.textMuted }}>{s.label}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
