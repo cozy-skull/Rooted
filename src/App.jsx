@@ -8,7 +8,7 @@ import GrowthTimeline from './GrowthTimeline'
 import { AboutRooted, AboutCozySkull } from './AboutPages'
 import { RecoveryMode, PhotoDiagnosis } from './RecoveryMode'
 import { MemorialGarden, moveToMemorial } from './MemorialGarden'
-import { WateringZones } from './WateringZones'
+import { WateringZones, suggestZone } from './WateringZones'
 import { ProfileScreen, RemindersScreen, AppearanceScreen, TempUnitsScreen, CalendarScreen, PhotoStorageScreen, BackupScreen, ContactScreen, RateScreen } from './Settings'
 
 const NAV = [
@@ -834,6 +834,44 @@ export default function App() {
           </div>
         </div>
 
+        {/* Today's Zone card */}
+        {(() => {
+          const todayDay = new Date().getDay()
+          const zones = JSON.parse(localStorage.getItem('rr_zones') || 'null') || []
+          const todayZones = zones.filter(z => z.days && z.days.includes(todayDay))
+          const isPropDay = todayDay === 0
+          const allProps = plants.flatMap(p => (p.propagations||[]).filter(pr=>pr.status==='Rooting'))
+          if (todayZones.length === 0 && !isPropDay) return null
+          return (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>📅 Today's zone review</div>
+              {todayZones.map(zone => {
+                const count = plants.filter(p => p.wateringZone === zone.id).length
+                return (
+                  <div key={zone.id} onClick={() => setShowZones(true)} style={{ background: (zone.color||'#7ec850') + '15', border: `1.5px solid ${zone.color||'#7ec850'}44`, borderRadius: 14, padding: '11px 14px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 22 }}>{zone.icon||'💧'}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: zone.color||'#7ec850' }}>{zone.name}</div>
+                      <div style={{ fontSize: 11, color: C.textMuted }}>{count} plants to review · Check before you water</div>
+                    </div>
+                    <div style={{ background: zone.color||'#7ec850', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
+                  </div>
+                )
+              })}
+              {isPropDay && allProps.length > 0 && (
+                <div onClick={() => setShowZones(true)} style={{ background: '#c8922a15', border: '1.5px solid #c8922a44', borderRadius: 14, padding: '11px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 22 }}>✂️</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#c8922a' }}>Prop Zone Sunday</div>
+                    <div style={{ fontSize: 11, color: C.textMuted }}>{allProps.length} active props to check</div>
+                  </div>
+                  <div style={{ background: '#c8922a', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
         {/* How's the gang doing */}
         <div style={sCard({ marginBottom: 12, padding: '12px 14px' })}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 10 }}>How's the gang doing?</div>
@@ -1021,6 +1059,21 @@ export default function App() {
                   {ROOMS.filter(r => r !== 'All').map(r => <option key={r}>{r}</option>)}
                 </select>
               </div>
+              {(() => {
+                const suggestion = suggestZone(newPlant)
+                const zones = JSON.parse(localStorage.getItem('rr_zones') || 'null') || []
+                const suggestedZone = suggestion ? zones.find(z => z.id === suggestion.zone) : null
+                if (!suggestedZone) return null
+                return (
+                  <div style={{ marginBottom: 10, background: (suggestedZone.color||C.accent)+'15', border: `1px solid ${suggestedZone.color||C.accent}44`, borderRadius: 10, padding: '8px 12px' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: suggestedZone.color||C.accent, marginBottom: 3 }}>💧 Suggested: {suggestedZone.name}</div>
+                    <div style={{ fontSize: 11, color: C.textMuted }}>{suggestion.reason}</div>
+                    <button onClick={() => setNewPlant(p => ({...p, wateringZone: suggestedZone.id}))} style={{ marginTop: 6, fontSize: 11, padding: '4px 10px', borderRadius: 7, border: `1px solid ${suggestedZone.color||C.accent}44`, background: 'transparent', color: suggestedZone.color||C.accent, cursor: 'pointer', fontWeight: 700 }}>
+                      {newPlant.wateringZone === suggestedZone.id ? '✓ Added to zone' : 'Add to this zone'}
+                    </button>
+                  </div>
+                )
+              })()}
               <div style={{ marginBottom: 10 }}>
                 <div style={sLbl}>Water every (days)</div>
                 <input style={sInp} type="number" min={1} value={newPlant.waterFreqDays} onChange={e => setNewPlant(p => ({ ...p, waterFreqDays: parseInt(e.target.value) || 1 }))} />
