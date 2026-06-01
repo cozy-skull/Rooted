@@ -5,6 +5,7 @@ import SplashScreen from './SplashScreen'
 import { Ring, Confetti, Modal, Sheet, EmojiPick, sBtn, sBtnP, sBtnS, sInp, sLbl, sBtwn, sRow, sCard, sTab, sBdg, sH, sAv } from './components'
 import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges } from './constants'
 import GrowthTimeline from './GrowthTimeline'
+import { AboutRooted, AboutCozySkull } from './AboutPages'
 import { ProfileScreen, RemindersScreen, AppearanceScreen, TempUnitsScreen, CalendarScreen, PhotoStorageScreen, BackupScreen, ContactScreen, RateScreen } from './Settings'
 
 const NAV = [
@@ -71,6 +72,7 @@ export default function App() {
   const [showCourt, setShowCourt] = useState(false)
   const [showShed, setShowShed] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [showCozySkull, setShowCozySkull] = useState(false)
   const [user, setUser] = useState(() => ls('rr_user', null))
   const [showAuth, setShowAuth] = useState(false)
   const [authMode, setAuthMode] = useState('login')
@@ -700,21 +702,19 @@ export default function App() {
         </Sheet>
       )}
 
-      {showAbout && (
-        <div style={{ position: 'fixed', inset: 0, background: '#080604', zIndex: 9000, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-          <button style={{ ...sBtnS, position: 'fixed', top: 20, right: 20 }} onClick={() => setShowAbout(false)}>✕ Close</button>
-          <div style={{ textAlign: 'center', maxWidth: 360 }}>
-            <img src={splashLogo} alt="Rooted" style={{ width: 260, height: 'auto', marginBottom: 20 }} />
-            <div style={{ fontSize: 13, color: '#8a7d5a', lineHeight: 1.9, marginBottom: 20 }}>Most plant apps help you remember to water.<br /><br />Rooted helps you care for what you're growing. Track your collection, document progress, solve problems, and build a living record of your plants.</div>
-            <div style={{ fontSize: 12, color: '#c8922a', marginBottom: 4, fontStyle: 'italic' }}>Built by Cozy Skull</div>
-            <div style={{ fontSize: 11, color: '#6b5a38', letterSpacing: '1px', marginBottom: 28 }}>Plant care without perfectionism.<br />Held. Tended. Not abandoned.</div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 28 }}>
-              {['🌿 Website', '📸 Instagram', '📺 YouTube', '🛍️ Etsy'].map(l => <button key={l} style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid #3a3018', background: 'transparent', color: '#a89a6a', fontSize: 12, cursor: 'pointer' }}>{l}</button>)}
-            </div>
-            <button onClick={() => setCourtTaps(t => { const n = t + 1; if (n >= 5) { setShowCourt(true); setShowAbout(false); return 0 } return n })} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#3a3520', padding: '4px' }}>Rooted 1.0</button>
-            {courtTaps > 0 && courtTaps < 5 && <div style={{ fontSize: 10, color: '#4a4228', marginTop: 4 }}>{5 - courtTaps} more...</div>}
-          </div>
-        </div>
+            {showAbout && (
+        <AboutRooted
+          onClose={() => setShowAbout(false)}
+          onCourtTap={() => setCourtTaps(t => {
+            const n = t + 1
+            if (n >= 5) { setShowCourt(true); setShowAbout(false); return 0 }
+            return n
+          })}
+          courtTaps={courtTaps}
+        />
+      )}
+      {showCozySkull && (
+        <AboutCozySkull onClose={() => setShowCozySkull(false)} />
       )}
 
       {showShed && (
@@ -725,7 +725,7 @@ export default function App() {
             { section: 'Account', items: [{ icon: '👤', label: 'Profile', fn: () => { setShowProfile(true); setShowShed(false) } }, { icon: '☁️', label: 'Backup & Sync', fn: () => { setShowBackup(true); setShowShed(false) } }, { icon: '📷', label: 'Photo Storage', fn: () => { setShowPhotoStorage(true); setShowShed(false) } }] },
             { section: 'App Settings', items: [{ icon: '🔔', label: 'Reminders', fn: () => { setShowReminders(true); setShowShed(false) } }, { icon: '🌙', label: 'Appearance', fn: () => { setShowAppearance(true); setShowShed(false) } }, { icon: '📅', label: 'Calendar', fn: () => { setShowCalendar(true); setShowShed(false) } }, { icon: '🌡️', label: 'Temperature Units', fn: () => { setShowTempUnits(true); setShowShed(false) } }] },
             { section: 'Plant Tools', items: [{ icon: '🚑', label: 'Plant ER', fn: () => { setTab('planterr'); setShowShed(false) } }, { icon: '📖', label: 'Plant Journal', fn: () => { setTab('journal'); setShowShed(false) } }, { icon: '✂️', label: 'Propagation Lab' }, { icon: '⚖️', label: 'Plant Court', fn: () => { setShowCourt(true); setShowShed(false) } }] },
-            { section: 'Cozy Skull', items: [{ icon: '🖤', label: 'About Rooted', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '🌿', label: 'About Cozy Skull', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '📬', label: 'Contact Support', fn: () => { setShowContact(true); setShowShed(false) } }, { icon: '⭐', label: 'Rate Rooted', fn: () => { setShowRate(true); setShowShed(false) } }] },
+            { section: 'Cozy Skull', items: [{ icon: '🖤', label: 'About Rooted', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '🌿', label: 'About Cozy Skull', fn: () => { setShowCozySkull(true); setShowShed(false) } }, { icon: '📬', label: 'Contact Support', fn: () => { setShowContact(true); setShowShed(false) } }, { icon: '⭐', label: 'Rate Rooted', fn: () => { setShowRate(true); setShowShed(false) } }] },
           ].map(group => (
             <div key={group.section}>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', margin: '16px 0 8px' }}>{group.section}</div>
