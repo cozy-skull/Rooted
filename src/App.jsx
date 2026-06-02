@@ -108,18 +108,10 @@ export default function App() {
   const [cityInput, setCityInput] = useState('')
   const [showLocationSetup, setShowLocationSetup] = useState(false)
   const [posts, setPosts] = useState(INIT_POSTS)
-  const [expandedPost, setExpandedPost] = useState(null)
-  const [newPost, setNewPost] = useState({ type: 'question', title: '', body: '', tags: '' })
-  const [showNewPost, setShowNewPost] = useState(false)
-  const [replyInput, setReplyInput] = useState('')
-  const [communityTab, setCommunityTab] = useState('feed')
-  const [communitySearch, setCommunitySearch] = useState('')
   const [swaps, setSwaps] = useState([
     { id: 1, author: 'PropQueenJess', avatar: '✂️', offering: 'Pothos cuttings (rooted)', wanting: 'Hoya or string of pearls', location: 'Local / Ship' },
     { id: 2, author: 'UrbanJungleMike', avatar: '🌴', offering: 'Monstera deliciosa pup', wanting: 'Any rare aroid', location: 'Local only' },
   ])
-  const [newSwap, setNewSwap] = useState({ offering: '', wanting: '', location: '' })
-  const [showNewSwap, setShowNewSwap] = useState(false)
   const [vacMode, setVacMode] = useState(false)
   const [vacReturn, setVacReturn] = useState('')
   const [vacDepart, setVacDepart] = useState('')
@@ -1231,98 +1223,52 @@ export default function App() {
 
       {/* ── COMMUNITY ──────────────────────────────────────────────────────── */}
       {tab === 'community' && (
-        <div style={{ padding: '12px 14px' }}>
-          <div style={sBtwn}><div style={sH(21)}>☕ Dirt & Tea</div><button style={sBtnP} onClick={() => setShowNewPost(true)}>+ Post</button></div>
-          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 14, fontStyle: 'italic' }}>Spill it. Ask it. Flex it.</div>
-          <input style={{ ...sInp, marginBottom: 12 }} placeholder="🔍 Search posts, tags..." value={communitySearch} onChange={e => setCommunitySearch(e.target.value)} />
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            {['feed', 'swaps'].map(t => <button key={t} style={sTab(communityTab === t)} onClick={() => setCommunityTab(t)}>{t.charAt(0).toUpperCase() + t.slice(1)}</button>)}
+        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 48 }}>
+
+          {/* Teapot illustration area */}
+          <div style={{ fontSize: 64, marginBottom: 20, filter: 'grayscale(30%)', opacity: 0.85 }}>☕</div>
+
+          {/* Coming soon badge */}
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: C.gold, background: C.gold + '18', border: `1px solid ${C.gold}44`, borderRadius: 20, padding: '4px 14px', marginBottom: 18 }}>
+            Coming Soon
           </div>
-          {showNewPost && (
-            <div style={sCard({ marginBottom: 14 })}>
-              <div style={{ ...sH(14), marginBottom: 12 }}>New post</div>
-              <div style={{ marginBottom: 10 }}>
-                <div style={sLbl}>Type</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {[{id:'question',label:'Question',c:'#5b9fd4'},{id:'swap',label:'Swap ✂️',c:'#7ec850'},{id:'flex',label:'Flex 🌟',c:'#c8922a'}].map(t => (
-                    <button key={t.id} style={{ ...sTab(newPost.type === t.id), borderColor: newPost.type === t.id ? t.c : C.border, color: newPost.type === t.id ? t.c : C.textMuted }} onClick={() => setNewPost(p => ({ ...p, type: t.id }))}>{t.label}</button>
-                  ))}
-                </div>
+
+          {/* Headline */}
+          <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1.2, marginBottom: 12, maxWidth: 280 }}>
+            Dirt & Tea
+          </div>
+
+          {/* Tagline */}
+          <div style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.7, marginBottom: 32, maxWidth: 300, fontStyle: 'italic' }}>
+            A community greenhouse for plant people. Ask questions, flex your wins, swap cuttings.
+          </div>
+
+          {/* Feature preview cards */}
+          {[
+            { icon: '💬', label: 'Community Feed', desc: 'Questions, flexes, and hot plant takes' },
+            { icon: '✂️', label: 'Cutting Swaps', desc: 'Trade propagations with local growers' },
+            { icon: '🌿', label: 'Plant Sitting', desc: 'Find trusted sitters for your collection' },
+          ].map(f => (
+            <div key={f.label} style={{ width: '100%', maxWidth: 320, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: '14px 16px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left', opacity: 0.7 }}>
+              <span style={{ fontSize: 24, flexShrink: 0 }}>{f.icon}</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{f.label}</div>
+                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{f.desc}</div>
               </div>
-              <div style={{ marginBottom: 10 }}><div style={sLbl}>Title</div><input style={sInp} value={newPost.title} onChange={e => setNewPost(p => ({ ...p, title: e.target.value }))} /></div>
-              <div style={{ marginBottom: 10 }}><div style={sLbl}>Body</div><textarea style={{ ...sInp, minHeight: 80, resize: 'vertical' }} value={newPost.body} onChange={e => setNewPost(p => ({ ...p, body: e.target.value }))} /></div>
-              <div style={{ marginBottom: 12 }}><div style={sLbl}>Tags</div><input style={sInp} placeholder="monstera, help" value={newPost.tags} onChange={e => setNewPost(p => ({ ...p, tags: e.target.value }))} /></div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button style={sBtnP} onClick={() => {
-                  if (!newPost.title || !newPost.body) return
-                  setPosts(ps => [{ id: Date.now(), type: newPost.type, author: user?.name || 'Anonymous', avatar: '🌿', time: 'Just now', title: newPost.title, body: newPost.body, tags: newPost.tags.split(',').map(t => t.trim()).filter(Boolean), likes: 0, replies: [] }, ...ps])
-                  setNewPost({ type: 'question', title: '', body: '', tags: '' }); setShowNewPost(false)
-                }}>Post it ☕</button>
-                <button style={sBtn} onClick={() => setShowNewPost(false)}>Cancel</button>
-              </div>
+              <div style={{ marginLeft: 'auto', fontSize: 11, color: C.gold, fontWeight: 700, flexShrink: 0 }}>Soon</div>
             </div>
-          )}
-          {communityTab === 'feed' && (
-            <div>
-              {(communitySearch ? posts.filter(p => p.title.toLowerCase().includes(communitySearch.toLowerCase()) || p.tags.some(t => t.toLowerCase().includes(communitySearch.toLowerCase()))) : posts).map(post => {
-                const PT = { question: { c: '#5b9fd4', bg: '#5b9fd422', l: 'Question' }, swap: { c: '#7ec850', bg: '#7ec85022', l: 'Swap' }, flex: { c: '#c8922a', bg: '#c8922a22', l: 'Flex' } }
-                const pt = PT[post.type] || {}
-                return (
-                  <div key={post.id} style={sCard({ marginBottom: 12 })}>
-                    <div style={sBtwn}>
-                      <div style={sRow}><div style={{ fontSize: 20 }}>{post.avatar}</div><div><div style={{ fontWeight: 600, fontSize: 13 }}>{post.author}</div><div style={{ fontSize: 11, color: C.textMuted }}>{post.time}</div></div></div>
-                      <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 10, background: pt.bg, color: pt.c, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{pt.l}</span>
-                    </div>
-                    <div style={{ ...sH(14), marginTop: 8 }}>{post.title}</div>
-                    <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, marginTop: 4 }}>{post.body}</div>
-                    {post.tags.length > 0 && <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 8 }}>{post.tags.map(t => <span key={t} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 9, background: C.bgSubtle, color: C.textMuted, border: `0.5px solid ${C.border}`, cursor: 'pointer' }} onClick={() => setCommunitySearch(t)}>#{t}</span>)}</div>}
-                    <div style={{ display: 'flex', gap: 14, marginTop: 10, alignItems: 'center' }}>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: C.textMuted, padding: 0 }} onClick={() => setPosts(ps => ps.map(p => p.id === post.id ? { ...p, likes: p.likes + 1 } : p))}>♥ {post.likes}</button>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: C.textMuted, padding: 0 }} onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}>💬 {post.replies.length} {expandedPost === post.id ? '▲' : '▼'}</button>
-                    </div>
-                    {expandedPost === post.id && (
-                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${C.border}` }}>
-                        {post.replies.map((r, i) => <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 10 }}><div style={{ fontSize: 18, flexShrink: 0 }}>{r.avatar}</div><div style={{ background: C.bgSubtle, borderRadius: 10, padding: '8px 12px', flex: 1 }}><div style={{ fontWeight: 600, fontSize: 12 }}>{r.author} <span style={{ color: C.textMuted, fontWeight: 400 }}>{r.time}</span></div><div style={{ fontSize: 13, marginTop: 2 }}>{r.text}</div></div></div>)}
-                        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                          <input style={{ ...sInp, flex: 1 }} placeholder="Reply..." value={replyInput} onChange={e => setReplyInput(e.target.value)} />
-                          <button style={sBtnP} onClick={() => { if (!replyInput.trim()) return; setPosts(ps => ps.map(p => p.id === post.id ? { ...p, replies: [...p.replies, { author: user?.name || 'You', avatar: '🌿', text: replyInput, time: 'Just now' }] } : p)); setReplyInput('') }}>Reply</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          {communityTab === 'swaps' && (
-            <div>
-              <div style={sBtwn}><div style={{ fontSize: 13, color: C.textMuted, fontStyle: 'italic' }}>Trade, gift, snag cuttings. ✂️</div><button style={sBtnP} onClick={() => setShowNewSwap(true)}>+ List</button></div>
-              {showNewSwap && (
-                <div style={sCard({ marginTop: 12, marginBottom: 12 })}>
-                  <div style={{ marginBottom: 8 }}><div style={sLbl}>Offering</div><input style={sInp} value={newSwap.offering} onChange={e => setNewSwap(p => ({ ...p, offering: e.target.value }))} /></div>
-                  <div style={{ marginBottom: 8 }}><div style={sLbl}>Looking for</div><input style={sInp} value={newSwap.wanting} onChange={e => setNewSwap(p => ({ ...p, wanting: e.target.value }))} /></div>
-                  <div style={{ marginBottom: 12 }}><div style={sLbl}>Location</div><input style={sInp} value={newSwap.location} onChange={e => setNewSwap(p => ({ ...p, location: e.target.value }))} /></div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button style={sBtnP} onClick={() => { if (!newSwap.offering) return; setSwaps(sl => [{ id: Date.now(), author: user?.name || 'You', avatar: '🌿', ...newSwap }, ...sl]); setNewSwap({ offering: '', wanting: '', location: '' }); setShowNewSwap(false) }}>Post listing</button>
-                    <button style={sBtn} onClick={() => setShowNewSwap(false)}>Cancel</button>
-                  </div>
-                </div>
-              )}
-              <div style={{ marginTop: 10 }}>
-                {swaps.map(l => (
-                  <div key={l.id} style={sCard({ marginBottom: 10 })}>
-                    <div style={sBtwn}><div style={sRow}><div style={{ fontSize: 20 }}>{l.avatar}</div><div style={{ fontWeight: 600, fontSize: 13 }}>{l.author}</div></div><span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 9, background: C.accent + '22', color: C.accent, fontWeight: 700 }}>Available</span></div>
-                    <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 13 }}><span style={{ color: C.textMuted, fontWeight: 600 }}>Offering: </span>{l.offering}</div>
-                      <div style={{ fontSize: 13, marginTop: 3 }}><span style={{ color: C.textMuted, fontWeight: 600 }}>Wanting: </span>{l.wanting}</div>
-                      <div style={{ fontSize: 12, color: C.textMuted, marginTop: 3 }}>📍 {l.location}</div>
-                    </div>
-                    <button style={{ ...sBtnP, marginTop: 10, fontSize: 12, padding: '6px 14px' }}>Message ✉️</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          ))}
+
+          <div style={{ marginTop: 28, fontSize: 12, color: C.textMuted, lineHeight: 1.8, maxWidth: 280 }}>
+            We're building community the right way — when the greenhouse is full enough to feel alive.
+          </div>
+
+          <div style={{ marginTop: 8, fontSize: 12, color: C.textMuted, fontStyle: 'italic' }}>
+            Follow{' '}
+            <a href="https://www.instagram.com/cozy.skull" target="_blank" rel="noreferrer" style={{ color: C.accent, textDecoration: 'none', fontWeight: 600 }}>@cozy.skull</a>
+            {' '}for the launch announcement.
+          </div>
+
         </div>
       )}
 
