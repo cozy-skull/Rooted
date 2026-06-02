@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import iconLogo from './assets/icon.png'
 import splashLogo from './assets/splash.png'
 import SplashScreen from './SplashScreen'
+import Onboarding from './Onboarding'
 import { Ring, Confetti, Modal, Sheet, EmojiPick, sBtn, sBtnP, sBtnS, sInp, sLbl, sBtwn, sRow, sCard, sTab, sBdg, sH, sAv } from './components'
 import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges, searchPlantDB, PLANT_DB } from './constants'
 import GrowthTimeline from './GrowthTimeline'
@@ -78,7 +79,10 @@ function PropLabModal({ plants, onUpdatePlant, onNavigate, onClose, C, sCard, sH
 
 export default function App() {
   const [spaceName, setSpaceName] = useState(() => ls('rr_space', null))
-  const [showSplash, setShowSplash] = useState(true)
+  const isFirstLaunch = !ls('rr_onboarded', null)
+  const [appPhase, setAppPhase] = useState(isFirstLaunch ? 'splash_first' : 'splash_return')
+  // splash_first → onboarding → app
+  // splash_return → app
   const [darkMode, setDarkMode] = useState(() => {
     const saved = ls('rr_darkmode', true)
     setThemeColors(saved)
@@ -167,15 +171,25 @@ export default function App() {
   useEffect(() => { if (locationTip) lsSet('rr_tip', locationTip) }, [locationTip])
   useEffect(() => { if (user) lsSet('rr_user', user) }, [user])
 
-  // Show splash every time app opens
-  if (showSplash) {
+  // ── First launch: long splash → onboarding ─────────────────────────────
+  if (appPhase === 'splash_first') {
+    return <SplashScreen duration={2500} onDone={() => setAppPhase('onboarding')} />
+  }
+
+  if (appPhase === 'onboarding') {
     return (
-      <SplashScreen
-        spaceName={spaceName}
-        onComplete={name => { setSpaceName(name); setShowSplash(false) }}
-        onAnimationDone={() => setShowSplash(false)}
-      />
+      <Onboarding onComplete={({ name, email, space }) => {
+        if (space) { setSpaceName(space); lsSet('rr_space', space) }
+        if (name || email) { const u = { name: name || '', email: email || '' }; setUser(u); lsSet('rr_user', u) }
+        lsSet('rr_onboarded', true)
+        setAppPhase('app')
+      }} />
     )
+  }
+
+  // ── Repeat launch: short splash → app ──────────────────────────────────
+  if (appPhase === 'splash_return') {
+    return <SplashScreen duration={1000} onDone={() => setAppPhase('app')} />
   }
 
   const sp = plants.find(p => p.id === selectedId) || null

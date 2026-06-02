@@ -1,7 +1,6 @@
 import React from 'react'
-import splashFull from './assets/splash_full.jpg'
-import skullLogo from './assets/skull.jpg'
-import cozySkullWordmark from './assets/cozy_skull_wordmark.jpg'
+import rootedLockup from './assets/rooted_lockup.png'
+import cozySkullLogo from './assets/cozy_skull_logo.png'
 import { sBtnS, sBtnP } from './components'
 
 // ── About Rooted ──────────────────────────────────────────────────────────────
@@ -20,10 +19,10 @@ export function AboutRooted({ onClose, onCourtTap, courtTaps }) {
         onClick={onClose}
       >✕ Close</button>
 
-      {/* Rooted splash logo — full width at top */}
+      {/* Rooted lockup logo — full width at top */}
       <div style={{ width: '100%', maxWidth: 500 }}>
         <img
-          src={splashFull}
+          src={rootedLockup}
           alt="Rooted"
           style={{ width: '100%', height: 'auto', display: 'block' }}
         />
@@ -160,29 +159,16 @@ export function AboutCozySkull({ onClose }) {
         onClick={onClose}
       >✕ Close</button>
 
-      {/* Skull illustration */}
-      <div style={{
-        width: '100%', maxWidth: 340,
-        padding: '70px 3rem 0',
-        display: 'flex', justifyContent: 'center',
-      }}>
-        <img
-          src={skullLogo}
-          alt="Cozy Skull"
-          style={{ width: 200, height: 200, objectFit: 'contain' }}
-        />
-      </div>
-
-      {/* Cozy Skull wordmark in exact brand font */}
+      {/* Cozy Skull logo — inverted so white on dark bg */}
       <div style={{
         width: '100%', maxWidth: 360,
-        padding: '4px 2.5rem 0',
+        padding: '48px 2rem 0',
         display: 'flex', justifyContent: 'center',
       }}>
         <img
-          src={cozySkullWordmark}
+          src={cozySkullLogo}
           alt="Cozy Skull"
-          style={{ width: '100%', height: 'auto', display: 'block' }}
+          style={{ width: '100%', height: 'auto', display: 'block', filter: 'invert(1)' }}
         />
       </div>
 
