@@ -19,6 +19,63 @@ const NAV = [
   ['journal', '📖', 'Journal'],
 ]
 
+function PropLabModal({ plants, onUpdatePlant, onNavigate, onClose, C, sCard, sH, sBtn, sBtnP, sBdg }) {
+  const [filterStatus, setFilterStatus] = useState('all')
+  const statuses = ['all', 'Rooting', 'Potted', 'Gifted', 'Failed']
+  const allProps = plants.flatMap(p =>
+    (p.propagations || []).map(pr => ({ ...pr, plantId: p.id, plantName: p.name, plantEmoji: p.emoji || '🪴' }))
+  )
+  const filtered = filterStatus === 'all' ? allProps : allProps.filter(pr => pr.status === filterStatus)
+  const statusColor = { Rooting: C.accent, Potted: '#6ab04c', Gifted: '#c8922a', Failed: '#888' }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: C.bg, zIndex: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 700, color: C.text }}>✂️ Propagation Lab</div>
+          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>{allProps.length} total across {plants.filter(p => p.propagations?.length).length} plants</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, padding: '10px 16px', overflowX: 'auto', borderBottom: `1px solid ${C.border}` }}>
+        {statuses.map(s => (
+          <button key={s} onClick={() => setFilterStatus(s)} style={{
+            padding: '5px 14px', borderRadius: 20, border: `1px solid ${filterStatus === s ? C.accent : C.border}`,
+            background: filterStatus === s ? C.accent + '22' : 'transparent',
+            color: filterStatus === s ? C.accent : C.textMuted, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0
+          }}>{s === 'all' ? `All (${allProps.length})` : `${s} (${allProps.filter(p => p.status === s).length})`}</button>
+        ))}
+      </div>
+
+      <div style={{ padding: '12px 16px', flex: 1 }}>
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>✂️</div>
+            <div style={{ fontStyle: 'italic', fontSize: 14 }}>No propagations yet. Snip snip!</div>
+            <div style={{ fontSize: 12, marginTop: 6 }}>Open a plant's Propagations tab to get started.</div>
+          </div>
+        )}
+        {filtered.map(prop => (
+          <div key={`${prop.plantId}-${prop.id}`} onClick={() => onNavigate(prop.plantId)}
+            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px', marginBottom: 10, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 20 }}>{prop.plantEmoji}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, color: C.textMuted }}>{prop.plantName}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.text }}>{prop.method || 'Unnamed prop'}</div>
+              </div>
+              <span style={{ background: (statusColor[prop.status] || C.accent) + '22', color: statusColor[prop.status] || C.accent, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 10 }}>{prop.status}</span>
+            </div>
+            {prop.notes && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>{prop.notes}</div>}
+            <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{prop.available && <span style={{ color: C.accent, marginRight: 8 }}>📋 On swap board</span>}{new Date(prop.date).toLocaleDateString()}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [spaceName, setSpaceName] = useState(() => ls('rr_space', null))
   const [showSplash, setShowSplash] = useState(true)
@@ -100,6 +157,7 @@ export default function App() {
   const [showRate, setShowRate] = useState(false)
   const [showMemorial, setShowMemorial] = useState(false)
   const [showZones, setShowZones] = useState(false)
+  const [showPropLab, setShowPropLab] = useState(false)
   const [showPhotoDiagnosis, setShowPhotoDiagnosis] = useState(false)
   const [profileBadges, setProfileBadges] = useState(() => ls('rr_profile_badges', []))
   const [newBadges, setNewBadges] = useState([])
@@ -682,6 +740,7 @@ export default function App() {
 
       {showMemorial && <MemorialGarden onClose={() => setShowMemorial(false)} />}
       {showZones && <WateringZones plants={plants} onUpdatePlant={updatePlant} onClose={() => setShowZones(false)} />}
+      {showPropLab && <PropLabModal plants={plants} onUpdatePlant={updatePlant} onNavigate={(id) => { setSelectedId(id); setPlantTab('propagations'); setShowPropLab(false) }} onClose={() => setShowPropLab(false)} C={C} sCard={sCard} sH={sH} sBtn={sBtn} sBtnP={sBtnP} sBdg={sBdg} />}
 
       {/* Settings screens */}
       {showProfile && <ProfileScreen user={user} onSave={u => { setUser(u); setShowProfile(false) }} onClose={() => setShowProfile(false)} />}
@@ -793,7 +852,7 @@ export default function App() {
           {[
             { section: 'Account', items: [{ icon: '👤', label: 'Profile', fn: () => { setShowProfile(true); setShowShed(false) } }, { icon: '☁️', label: 'Backup & Sync', fn: () => { setShowBackup(true); setShowShed(false) } }, { icon: '📷', label: 'Photo Storage', fn: () => { setShowPhotoStorage(true); setShowShed(false) } }] },
             { section: 'App Settings', items: [{ icon: '🔔', label: 'Reminders', fn: () => { setShowReminders(true); setShowShed(false) } }, { icon: '🌙', label: 'Appearance', fn: () => { setShowAppearance(true); setShowShed(false) } }, { icon: '📅', label: 'Calendar', fn: () => { setShowCalendar(true); setShowShed(false) } }, { icon: '🌡️', label: 'Temperature Units', fn: () => { setShowTempUnits(true); setShowShed(false) } }] },
-            { section: 'Plant Tools', items: [{ icon: '🚑', label: 'Plant ER', fn: () => { setTab('planterr'); setShowShed(false) } }, { icon: '📖', label: 'Plant Journal', fn: () => { setTab('journal'); setShowShed(false) } }, { icon: '✂️', label: 'Propagation Lab' }, { icon: '⚖️', label: 'Plant Court', fn: () => { setShowCourt(true); setShowShed(false) } }, { icon: '💧', label: 'Watering Zones', fn: () => { setShowZones(true); setShowShed(false) } }, { icon: '🪦', label: 'Memorial Garden', fn: () => { setShowMemorial(true); setShowShed(false) } }] },
+            { section: 'Plant Tools', items: [{ icon: '🚑', label: 'Plant ER', fn: () => { setTab('planterr'); setShowShed(false) } }, { icon: '📖', label: 'Plant Journal', fn: () => { setTab('journal'); setShowShed(false) } }, { icon: '✂️', label: 'Propagation Lab', fn: () => { setTab('collection'); setShowShed(false); setShowPropLab(true) } }, { icon: '⚖️', label: 'Plant Court', fn: () => { setShowCourt(true); setShowShed(false) } }, { icon: '💧', label: 'Watering Zones', fn: () => { setShowZones(true); setShowShed(false) } }, { icon: '🪦', label: 'Memorial Garden', fn: () => { setShowMemorial(true); setShowShed(false) } }] },
             { section: 'Cozy Skull', items: [{ icon: '🖤', label: 'About Rooted', fn: () => { setShowAbout(true); setShowShed(false) } }, { icon: '🌿', label: 'About Cozy Skull', fn: () => { setShowCozySkull(true); setShowShed(false) } }, { icon: '📬', label: 'Contact Support', fn: () => { setShowContact(true); setShowShed(false) } }, { icon: '⭐', label: 'Rate Rooted', fn: () => { setShowRate(true); setShowShed(false) } }] },
           ].map(group => (
             <div key={group.section}>
@@ -834,40 +893,59 @@ export default function App() {
           </div>
         </div>
 
-        {/* Today's Zone card */}
+        {/* Watering Zones — always visible */}
         {(() => {
           const todayDay = new Date().getDay()
           const zones = JSON.parse(localStorage.getItem('rr_zones') || 'null') || []
           const todayZones = zones.filter(z => z.days && z.days.includes(todayDay))
           const isPropDay = todayDay === 0
           const allProps = plants.flatMap(p => (p.propagations||[]).filter(pr=>pr.status==='Rooting'))
-          if (todayZones.length === 0 && !isPropDay) return null
+          const hasActivity = todayZones.length > 0 || (isPropDay && allProps.length > 0)
+
           return (
             <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>📅 Today's zone review</div>
-              {todayZones.map(zone => {
-                const count = plants.filter(p => p.wateringZone === zone.id).length
-                return (
-                  <div key={zone.id} onClick={() => setShowZones(true)} style={{ background: (zone.color||'#7ec850') + '15', border: `1.5px solid ${zone.color||'#7ec850'}44`, borderRadius: 14, padding: '11px 14px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 22 }}>{zone.icon||'💧'}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: zone.color||'#7ec850' }}>{zone.name}</div>
-                      <div style={{ fontSize: 11, color: C.textMuted }}>{count} plants to review · Check before you water</div>
+              {hasActivity && (
+                <>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>📅 Today's zone review</div>
+                  {todayZones.map(zone => {
+                    const count = plants.filter(p => p.wateringZone === zone.id).length
+                    return (
+                      <div key={zone.id} onClick={() => setShowZones(true)} style={{ background: (zone.color||'#7ec850') + '15', border: `1.5px solid ${zone.color||'#7ec850'}44`, borderRadius: 14, padding: '11px 14px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 22 }}>{zone.icon||'💧'}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: zone.color||'#7ec850' }}>{zone.name}</div>
+                          <div style={{ fontSize: 11, color: C.textMuted }}>{count} plants to review · Check before you water</div>
+                        </div>
+                        <div style={{ background: zone.color||'#7ec850', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
+                      </div>
+                    )
+                  })}
+                  {isPropDay && allProps.length > 0 && (
+                    <div onClick={() => setShowZones(true)} style={{ background: '#c8922a15', border: '1.5px solid #c8922a44', borderRadius: 14, padding: '11px 14px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 22 }}>✂️</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#c8922a' }}>Prop Zone Sunday</div>
+                        <div style={{ fontSize: 11, color: C.textMuted }}>{allProps.length} active props to check</div>
+                      </div>
+                      <div style={{ background: '#c8922a', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
                     </div>
-                    <div style={{ background: zone.color||'#7ec850', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
-                  </div>
-                )
-              })}
-              {isPropDay && allProps.length > 0 && (
-                <div onClick={() => setShowZones(true)} style={{ background: '#c8922a15', border: '1.5px solid #c8922a44', borderRadius: 14, padding: '11px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 22 }}>✂️</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#c8922a' }}>Prop Zone Sunday</div>
-                    <div style={{ fontSize: 11, color: C.textMuted }}>{allProps.length} active props to check</div>
-                  </div>
-                  <div style={{ background: '#c8922a', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
-                </div>
+                  )}
+                </>
               )}
+
+              {/* Persistent zones quick-access bar */}
+              <div onClick={() => setShowZones(true)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>💧</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Watering Zones</div>
+                  <div style={{ fontSize: 11, color: C.textMuted }}>
+                    {zones.length === 0
+                      ? 'Set up zones to organize your watering schedule'
+                      : `${zones.length} zone${zones.length > 1 ? 's' : ''} · ${plants.filter(p => p.wateringZone).length} plants assigned`}
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, color: C.textMuted }}>→</div>
+              </div>
             </div>
           )
         })()}
