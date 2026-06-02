@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -15,12 +15,12 @@ html, body, #root {
 body {
   background: #0d0c09;
   color: #e8dfc8;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Lora', Georgia, serif;
   -webkit-font-smoothing: antialiased;
 }
 
 input, textarea, select, button {
-  font-family: inherit;
+  font-family: 'Lora', Georgia, serif;
   color-scheme: dark;
 }
 
@@ -41,6 +41,12 @@ input, textarea, select, button {
   50% { opacity: 1; }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 .bob { animation: bob 3.5s ease-in-out infinite; }
 .fade-up { animation: fadeUp 0.7s ease forwards; }
 .shimmer { animation: shimmer 2s ease-in-out infinite; }
+.pulse { animation: pulse 2s ease-in-out infinite; }

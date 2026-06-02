@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import iconLogo from './assets/icon.png'
-import splashLogo from './assets/splash.png'
 import SplashScreen from './SplashScreen'
 import Onboarding from './Onboarding'
 import { Ring, Confetti, Modal, Sheet, EmojiPick, sBtn, sBtnP, sBtnS, sInp, sLbl, sBtwn, sRow, sCard, sTab, sBdg, sH, sAv } from './components'
-import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges, searchPlantDB, PLANT_DB } from './constants'
+import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges, searchPlantDB, PLANT_DB, WISDOM, MOOD_SUBTITLES } from './constants'
+import { LeafIcon, WaterDropIcon, ScissorsIcon, SproutIcon, CrossIcon, CameraIcon, CloudSyncIcon, TeaIcon, BookIcon, AlertIcon, ZoneIcon, MoonIcon, NavGreenhouse, NavCollection, NavPlantER, NavCommunity, NavJournal, NavShed } from './Icons'
 import GrowthTimeline from './GrowthTimeline'
 import { AboutRooted, AboutCozySkull } from './AboutPages'
 import { RecoveryMode, PhotoDiagnosis } from './RecoveryMode'
@@ -13,11 +13,11 @@ import { WateringZones, suggestZone } from './WateringZones'
 import { ProfileScreen, RemindersScreen, AppearanceScreen, TempUnitsScreen, CalendarScreen, PhotoStorageScreen, BackupScreen, ContactScreen, RateScreen } from './Settings'
 
 const NAV = [
-  ['greenhouse', '🌿', 'Greenhouse'],
-  ['collection', '🪴', 'Collection'],
-  ['planterr', '🚑', 'Plant ER'],
-  ['community', '☕', 'Community'],
-  ['journal', '📖', 'Journal'],
+  ['greenhouse', 'greenhouse', 'Greenhouse'],
+  ['collection', 'collection', 'Collection'],
+  ['planterr', 'planterr', 'Plant ER'],
+  ['community', 'community', 'Dirt & Tea'],
+  ['journal', 'journal', 'Journal'],
 ]
 
 function PropLabModal({ plants, onUpdatePlant, onNavigate, onClose, C, sCard, sH, sBtn, sBtnP, sBdg }) {
@@ -99,10 +99,13 @@ export default function App() {
   const [potdExpanded, setPotdExpanded] = useState(false)
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)])
   const [dailyTask] = useState(() => TASKS[new Date().getDay()])
+  const [wisdom] = useState(() => WISDOM[Math.floor(Math.random() * WISDOM.length)])
+  const [potdIndex] = useState(() => Math.floor(Math.random() * 100))
   const [verdict] = useState(() => VERDICTS[Math.floor(Math.random() * VERDICTS.length)])
   const [newPlant, setNewPlant] = useState({ name: '', nickname: '', room: 'Living Room', species: '', waterFreqDays: 7, fertilizeFreqDays: 30, repotFreqDays: 365, notes: '', photo: null, emoji: '🌿', acquiredDate: '', rescueStory: '', giftedFrom: '' })
   const [plantSearch, setPlantSearch] = useState('')
   const [plantSuggestions, setPlantSuggestions] = useState([])
+  const [erPhoto, setErPhoto] = useState(null)
   const [aiMode, setAiMode] = useState('id')
   const [aiInput, setAiInput] = useState('')
   const [aiResult, setAiResult] = useState('')
@@ -196,7 +199,7 @@ export default function App() {
   const filtered = roomFilter === 'All' ? plants : plants.filter(p => p.room === roomFilter)
   const urgent = plants.filter(p => waterStatus(p).urgent)
   const needsWater = plants.filter(p => waterStatus(p).pct < 0.5)
-  const potd = plants[0] || null
+  const potd = plants.length > 0 ? plants[potdIndex % plants.length] : null
   const greeting = getGreeting()
 
   // ── Plant actions ───────────────────────────────────────────────────────────
@@ -382,18 +385,19 @@ export default function App() {
   // ── Shared layout pieces ────────────────────────────────────────────────────
   const navBar = (
     <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 680, background: C.navBg, borderTop: `1px solid ${C.border}`, display: 'flex', padding: '8px 4px env(safe-area-inset-bottom, 12px)', zIndex: 100 }}>
-      {NAV.map(([id, icon, label]) => {
+      {NAV.map(([id, iconKey, label]) => {
         const active = tab === id
+        const NavIcon = { greenhouse: NavGreenhouse, collection: NavCollection, planterr: NavPlantER, community: NavCommunity, journal: NavJournal }[iconKey]
         return (
-          <button key={id} onClick={() => setTab(id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '6px 2px', cursor: 'pointer', border: 'none', background: 'transparent' }}>
-            <span style={{ fontSize: 22, filter: active ? 'none' : 'grayscale(80%)', opacity: active ? 1 : 0.4 }}>{icon}</span>
-            <span style={{ fontSize: 9, fontWeight: active ? 700 : 400, color: active ? C.accent : C.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</span>
+          <button key={id} onClick={() => setTab(id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 2px', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+            <NavIcon active={active} size={24} />
+            <span style={{ fontSize: 9, fontWeight: active ? 700 : 400, color: active ? C.accent : C.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: "'Lora', serif" }}>{label}</span>
           </button>
         )
       })}
-      <button onClick={() => setShowShed(true)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '6px 2px', cursor: 'pointer', border: 'none', background: 'transparent' }}>
-        <span style={{ fontSize: 22, opacity: 0.4 }}>⚙️</span>
-        <span style={{ fontSize: 9, color: C.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shed</span>
+      <button onClick={() => setShowShed(true)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 2px', cursor: 'pointer', border: 'none', background: 'transparent' }}>
+        <NavShed active={false} size={24} />
+        <span style={{ fontSize: 9, color: C.textFaint, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: "'Lora', serif" }}>Shed</span>
       </button>
     </div>
   )
@@ -411,15 +415,34 @@ export default function App() {
         <div style={sRow}>
           {user
             ? <span style={{ fontSize: 12, color: C.textMuted }}>{user.name}</span>
-            : <button style={{ ...sBtnP, fontSize: 11, padding: '5px 12px' }} onClick={() => setShowAuth(true)}>Sign in</button>
+            : <button onClick={() => setShowAuth(true)} title="Sign in to sync" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', display: 'flex', alignItems: 'center', borderRadius: 8 }}>
+                <CloudSyncIcon size={18} color={C.textMuted} />
+              </button>
           }
-          <button style={{ ...sBtnS, padding: '5px 10px', fontSize: 13 }} onClick={() => setShowShed(true)}>⚙️</button>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px' }} onClick={() => setShowShed(true)}>
+            <NavShed size={20} />
+          </button>
         </div>
       </div>
       {tab === 'greenhouse' && (
         <div style={{ marginTop: 10 }}>
           <div style={{ fontSize: 12, color: C.textMuted }}>{greeting.icon} {greeting.text}</div>
           <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 26, fontWeight: 700, color: C.text, lineHeight: 1.2 }}>{spaceName}</div>
+          {plants.length > 0 && (
+            <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, fontStyle: 'italic', lineHeight: 1.6 }}>
+              {(() => {
+                const thriving = plants.filter(p => p.mood === 'thriving')
+                const struggling = plants.filter(p => p.mood === 'struggling' || p.mood === 'crisis' || p.mood === 'drama')
+                const needWater = plants.filter(p => waterStatus(p).urgent)
+                const parts = []
+                if (thriving.length === plants.length) return `${thriving.length === 1 ? thriving[0].nickname || thriving[0].name : 'Everyone'} is thriving. You're doing great.`
+                if (thriving.length > 0) parts.push(`${thriving.map(p => p.nickname || p.name).slice(0,2).join(' & ')} ${thriving.length === 1 ? 'is' : 'are'} thriving.`)
+                if (needWater.length > 0) parts.push(`${needWater.map(p => p.nickname || p.name).slice(0,2).join(' & ')} ${needWater.length === 1 ? 'needs' : 'need'} water.`)
+                if (struggling.length > 0 && needWater.length === 0) parts.push(`${struggling.map(p => p.nickname || p.name).slice(0,1).join('')} is being dramatic.`)
+                return parts.join(' ') || 'Your gang is here.'
+              })()}
+            </div>
+          )}
           <div style={{ fontSize: 12, color: C.textMuted, fontStyle: 'italic', marginTop: 3, opacity: 0.85 }}>"{quote}"</div>
         </div>
       )}
@@ -436,7 +459,7 @@ export default function App() {
     const spBadges = sp.badges || []
 
     return (
-      <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", maxWidth: 680, margin: '0 auto', padding: '0 0 80px', background: C.bg, minHeight: '100vh', color: C.text }}>
+      <div style={{ fontFamily: "'Lora', Georgia, serif", maxWidth: 680, margin: '0 auto', padding: '0 0 80px', background: C.bg, minHeight: '100vh', color: C.text }}>
         <Confetti active={confetti} onDone={() => setConfetti(false)} />
 
       {/* New badge notification */}
@@ -464,10 +487,19 @@ export default function App() {
             <button style={{ ...sBtn, color: C.dangerText, borderColor: C.dangerBorder, fontSize: 12, padding: '5px 12px' }} onClick={() => delPlant(sp.id)}>Delete</button>
           </div>
           <div style={{ ...sRow, marginTop: 12 }}>
-            <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-              <div style={{ ...sAv(sp.photo), width: 52, height: 52, borderColor: aura + '55', fontSize: 28 }}>{!sp.photo && (sp.emoji || '🌿')}</div>
-              <Ring pct={ws.pct} size={58} stroke={2.5} color={aura} bg={C.border} />
+            <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0, cursor: 'pointer' }}
+              onClick={() => spPhotoRef.current?.click()}
+              title="Tap to update photo">
+              {sp.photo
+                ? <img src={sp.photo} alt={sp.name} style={{ width: 68, height: 68, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${aura}55` }} />
+                : <div style={{ ...sAv(null), width: 68, height: 68, borderColor: aura + '55', fontSize: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{sp.emoji || '🌿'}</div>
+              }
+              <div style={{ position: 'absolute', bottom: 2, right: 2, background: C.bg, borderRadius: '50%', padding: 3, boxShadow: `0 0 4px ${aura}44` }}>
+                <CameraIcon size={12} color={aura} />
+              </div>
+              <Ring pct={ws.pct} size={74} stroke={2.5} color={aura} bg={C.border} />
             </div>
+            <input type="file" accept="image/*" ref={spPhotoRef} style={{ display: 'none' }} onChange={e => uploadPhoto(e, photo => updatePlant(sp.id, { photo }))} />
             <div>
               <div style={sH(21)}>{sp.nickname || sp.name}</div>
               <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{sp.species || sp.name} · {sp.room}</div>
@@ -516,7 +548,10 @@ export default function App() {
               <div style={sLbl}>Mood</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {MOODS.map(m => (
-                  <button key={m.id} style={{ ...sTab(sp.mood === m.id), borderColor: sp.mood === m.id ? m.color : C.border, color: sp.mood === m.id ? m.color : C.textMuted }} onClick={() => updatePlant(sp.id, { mood: m.id })}>{m.label}</button>
+                  <button key={m.id} style={{ ...sTab(sp.mood === m.id), borderColor: sp.mood === m.id ? m.color : C.border, color: sp.mood === m.id ? m.color : C.textMuted, flexDirection: 'column', gap: 1, padding: '6px 10px' }} onClick={() => updatePlant(sp.id, { mood: m.id })}>
+                    <span>{m.label}</span>
+                    {sp.mood === m.id && MOOD_SUBTITLES[m.id] && <span style={{ fontSize: 9, opacity: 0.7, fontStyle: 'italic', fontWeight: 400 }}>{MOOD_SUBTITLES[m.id]}</span>}
+                  </button>
                 ))}
               </div>
             </div>
@@ -807,7 +842,7 @@ export default function App() {
   }
 
   // ── Main app layout ─────────────────────────────────────────────────────────
-  const appStyle = { fontFamily: "'DM Sans', system-ui, sans-serif", maxWidth: 680, margin: '0 auto', padding: '0 0 80px', background: C.bg, minHeight: '100vh', color: C.text }
+  const appStyle = { fontFamily: "'Lora', Georgia, serif", maxWidth: 680, margin: '0 auto', padding: '0 0 80px', background: C.bg, minHeight: '100vh', color: C.text }
 
   return (
     <div style={appStyle}>
@@ -948,7 +983,7 @@ export default function App() {
             </div>
             {user
               ? <div style={sBtwn}><div style={{ fontSize: 13, color: C.textMuted }}>{user.name}</div><button style={{ ...sBtnS, color: C.dangerText, borderColor: C.dangerBorder }} onClick={() => { setUser(null); setShowShed(false) }}>Sign out</button></div>
-              : <button style={{ ...sBtnP, width: '100%', padding: '11px', marginTop: 6 }} onClick={() => { setShowAuth(true); setShowShed(false) }}>Sign in to sync</button>}
+              : <button style={{ width: '100%', padding: '11px', marginTop: 6, background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 10, color: C.textMuted, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} onClick={() => { setShowAuth(true); setShowShed(false) }}><CloudSyncIcon size={16} color={C.textMuted} /> Sign in to sync</button>}
           </div>
         </Sheet>
       )}
@@ -1060,8 +1095,18 @@ export default function App() {
             ))}
           </div>
 
+          {/* Greenhouse Wisdom */}
+          <div style={sCard({ marginBottom: 10, borderColor: C.gold + '33', background: C.gold + '08' })}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <LeafIcon size={12} color={C.gold} /> Greenhouse Wisdom
+            </div>
+            <div style={{ fontSize: 14, color: C.text, lineHeight: 1.7, fontStyle: 'italic' }}>"{wisdom}"</div>
+          </div>
+
           <div style={sCard({ marginBottom: 14, borderColor: C.lavender + '44' })}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.lavender, marginBottom: 5 }}>🌙 Today's task</div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.lavender, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <MoonIcon size={12} color={C.lavender} /> Today's Task
+            </div>
             <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6 }}>{dailyTask}</div>
           </div>
 
@@ -1299,22 +1344,36 @@ export default function App() {
               const ws = waterStatus(plant)
               const aura = MOOD_COLOR[plant.mood] || C.accent
               return (
-                <div key={plant.id} style={sCard({ borderColor: aura + '33', cursor: 'pointer', marginBottom: 10 })} onClick={() => setSelectedId(plant.id)}>
-                  <div style={sRow}>
-                    <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-                      <div style={{ ...sAv(plant.photo), width: 52, height: 52, borderColor: aura + '55', fontSize: 26 }}>{!plant.photo && (plant.emoji || '🌿')}</div>
-                      <Ring pct={ws.pct} size={58} stroke={2.5} color={aura} bg={C.border} />
+                <div key={plant.id} style={sCard({ borderColor: aura + '33', cursor: 'pointer', marginBottom: 10, padding: 0, overflow: 'hidden' })} onClick={() => setSelectedId(plant.id)}>
+                  <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                    {/* Large photo area */}
+                    <div style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
+                      {plant.photo
+                        ? <img src={plant.photo} alt={plant.name} style={{ width: 80, height: 80, objectFit: 'cover', display: 'block' }} />
+                        : <div style={{ width: 80, height: 80, background: aura + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>{plant.emoji || '🌿'}</div>
+                      }
+                      <div style={{ position: 'absolute', bottom: 4, left: 4 }}>
+                        <Ring pct={ws.pct} size={20} stroke={2} color={aura} bg={C.border + '88'} />
+                      </div>
+                      {/* Camera overlay if no photo */}
+                      {!plant.photo && (
+                        <div style={{ position: 'absolute', bottom: 4, right: 4, opacity: 0.4 }}>
+                          <CameraIcon size={14} color={C.text} />
+                        </div>
+                      )}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0, padding: '10px 12px' }}>
                       <div style={sBtwn}>
                         <div style={sH(14)}>{plant.nickname || plant.name}</div>
                         <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                          {(plant.waterStreak || 0) > 2 && <span style={{ fontSize: 11, color: C.gold, fontWeight: 700 }}>🔥{plant.waterStreak}</span>}
+                          {(plant.waterStreak || 0) > 2 && <span style={{ fontSize: 10, color: C.gold, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 2 }}><WaterDropIcon size={10} color={C.gold} />{plant.waterStreak}</span>}
                           <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 9, background: MOOD_COLOR[plant.mood] + '22', color: MOOD_COLOR[plant.mood], fontWeight: 700 }}>{plant.mood}</span>
                         </div>
                       </div>
-                      <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{plant.room}{plant.species ? ' · ' + plant.species : ''}</div>
-                      <div style={{ fontSize: 12, color: ws.color, marginTop: 2, fontStyle: 'italic' }}>{ws.label}</div>
+                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{plant.room}{plant.species ? ' · ' + plant.species : ''}</div>
+                      <div style={{ fontSize: 11, color: ws.color, marginTop: 3, fontStyle: 'italic' }}>{ws.label}</div>
+                      {MOOD_SUBTITLES[plant.mood] && <div style={{ fontSize: 10, color: C.textFaint, marginTop: 2, fontStyle: 'italic' }}>{MOOD_SUBTITLES[plant.mood]}</div>}
                     </div>
                   </div>
                 </div>
@@ -1329,19 +1388,48 @@ export default function App() {
       {tab === 'planterr' && (
         <div style={{ padding: '12px 14px' }}>
           <div style={sH(21)}>Plant ER 🚑</div>
-          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16, fontStyle: 'italic' }}>Diagnose problems before they become disasters.</div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16, fontStyle: 'italic' }}>Something weird growing on your plant? Leaf looking suspicious? We've got you.</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            <button style={sTab(aiMode === 'id')} onClick={() => { setAiMode('id'); setAiResult(''); setAiInput('') }}>🔍 ID & Care</button>
-            <button style={sTab(aiMode === 'diagnose')} onClick={() => { setAiMode('diagnose'); setAiResult(''); setAiInput('') }}>🩺 Diagnose</button>
+            <button style={sTab(aiMode === 'id')} onClick={() => { setAiMode('id'); setAiResult(''); setAiInput(''); setErPhoto(null) }}>
+              <SproutIcon size={14} color={aiMode === 'id' ? C.accent : C.textMuted} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+              ID & Care
+            </button>
+            <button style={sTab(aiMode === 'diagnose')} onClick={() => { setAiMode('diagnose'); setAiResult(''); setAiInput(''); setErPhoto(null) }}>
+              <CrossIcon size={14} color={aiMode === 'diagnose' ? C.accent : C.textMuted} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+              Diagnose
+            </button>
           </div>
           {location && <div style={{ fontSize: 12, color: C.locText, background: C.locBg, padding: '6px 12px', borderRadius: 10, marginBottom: 14, border: `0.5px solid ${C.locBorder}`, display: 'inline-block' }}>📍 Tailored to {location.label}</div>}
-          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10 }}>{aiMode === 'id' ? 'Type a plant name or describe what you see.' : 'Describe the symptoms. Be honest.'}</div>
-          <textarea style={{ ...sInp, minHeight: 90, resize: 'vertical' }} placeholder={aiMode === 'id' ? 'e.g. fiddle leaf fig' : 'e.g. yellow leaves, wet soil for two weeks'} value={aiInput} onChange={e => setAiInput(e.target.value)} />
+          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10 }}>{aiMode === 'id' ? 'Tell us what you're growing or trying to figure out.' : 'Describe the drama. Be specific.'}</div>
+
+          {/* Photo upload for Plant ER */}
+          <div style={{ marginBottom: 10 }}>
+            <input type="file" accept="image/*" id="er-photo-input" style={{ display: 'none' }} onChange={e => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = ev => setErPhoto(ev.target.result)
+              reader.readAsDataURL(file)
+            }} />
+            {erPhoto ? (
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <img src={erPhoto} alt="Plant" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12, border: `1px solid ${C.accent}44` }} />
+                <button onClick={() => setErPhoto(null)} style={{ position: 'absolute', top: 8, right: 8, background: '#0008', border: 'none', color: '#fff', borderRadius: '50%', width: 28, height: 28, cursor: 'pointer', fontSize: 14 }}>✕</button>
+              </div>
+            ) : (
+              <button onClick={() => document.getElementById('er-photo-input').click()} style={{ ...sBtnS, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, width: '100%', justifyContent: 'center', padding: '10px', borderStyle: 'dashed' }}>
+                <CameraIcon size={16} color={C.textMuted} />
+                <span>Add a photo of your plant</span>
+              </button>
+            )}
+          </div>
+
+          <textarea style={{ ...sInp, minHeight: 80, resize: 'vertical' }} placeholder={aiMode === 'id' ? 'e.g. fiddle leaf fig, or "tall spiky plant from my grandma"' : 'e.g. yellow leaves with brown edges, watered 3 days ago'} value={aiInput} onChange={e => setAiInput(e.target.value)} />
           <button style={{ ...sBtnP, marginTop: 12 }} disabled={aiLoading} onClick={() => {
             if (!aiInput.trim()) return
             const lc = location ? ` User in ${location.label}.` : ''
-            if (aiMode === 'id') callAI(`Sassy plant expert with dark cottagecore energy.${lc} Full care guide for: ${aiInput}. Light, water, humidity, soil, fertilizing, common problems, toxicity, fun facts. No gendered language.`)
-            else callAI(`Sassy plant doctor.${lc} Diagnose: ${aiInput}. What is wrong, why it happened, step-by-step treatment plan. Dark cottagecore energy. No gendered language.`)
+            if (aiMode === 'id') callAI(`Sassy plant expert with dark cottagecore energy.${lc} Full care guide for: ${aiInput || 'the plant in the photo'}. Light, water, humidity, soil, fertilizing, common problems, toxicity, fun facts. No gendered language.`, erPhoto)
+            else callAI(`Sassy plant doctor.${lc} Diagnose: ${aiInput || 'the plant issue shown in the photo'}. What is wrong, why it happened, step-by-step treatment plan. Dark cottagecore energy. No gendered language.`, erPhoto)
           }}>{aiLoading ? (aiMode === 'id' ? 'Consulting the oracle...' : 'Running diagnostics...') : (aiMode === 'id' ? 'Identify & get care guide' : 'Diagnose my plant')}</button>
           {aiResult && <div style={sCard({ marginTop: 16, whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.8 })}>{aiResult}</div>}
         </div>
@@ -1407,11 +1495,38 @@ export default function App() {
           {plants.map(plant => {
             const entries = [...(plant.journal || [])].reverse().slice(0, 2)
             return (
-              <div key={plant.id} style={sCard({ marginBottom: 12, cursor: 'pointer' })} onClick={() => { setSelectedId(plant.id); setPlantTab('log'); setLogSection('journal') }}>
-                <div style={sRow}>
-                  <div style={{ ...sAv(plant.photo, 42), fontSize: 22 }}>{!plant.photo && (plant.emoji || '🌿')}</div>
-                  <div style={{ flex: 1 }}><div style={sH(13)}>{plant.nickname || plant.name}</div><div style={{ fontSize: 12, color: C.textMuted }}>{(plant.journal || []).length} {(plant.journal || []).length === 1 ? 'entry' : 'entries'}</div></div>
-                  <span style={{ color: C.textMuted, fontSize: 15 }}>›</span>
+              <div key={plant.id} style={sCard({ marginBottom: 12, cursor: 'pointer', padding: 0, overflow: 'hidden' })} onClick={() => { setSelectedId(plant.id); setPlantTab('log'); setLogSection('journal') }}>
+                <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                  {/* Plant photo */}
+                  <div style={{ width: 70, height: 70, flexShrink: 0 }}>
+                    {plant.photo
+                      ? <img src={plant.photo} alt={plant.name} style={{ width: 70, height: 70, objectFit: 'cover', display: 'block' }} />
+                      : <div style={{ width: 70, height: 70, background: (MOOD_COLOR[plant.mood] || C.accent) + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>{plant.emoji || '🌿'}</div>
+                    }
+                  </div>
+                  <div style={{ flex: 1, padding: '10px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={sH(13)}>{plant.nickname || plant.name}</div>
+                      <span style={{ color: C.textMuted, fontSize: 15 }}>›</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: C.textMuted }}>
+                        <BookIcon size={11} color={C.textMuted} />
+                        {(plant.journal || []).length} {(plant.journal || []).length === 1 ? 'entry' : 'entries'}
+                      </div>
+                      {(plant.journal || []).length > 0 && (
+                        <div style={{ fontSize: 11, color: C.textMuted }}>
+                          · {new Date([...(plant.journal || [])].sort((a,b) => new Date(b.date) - new Date(a.date))[0].date).toLocaleDateString()}
+                        </div>
+                      )}
+                      {(plant.waterStreak || 0) > 2 && (
+                        <div style={{ fontSize: 11, color: C.gold, display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <WaterDropIcon size={10} color={C.gold} />{plant.waterStreak}d streak
+                        </div>
+                      )}
+                    </div>
+                    {(plant.journal || []).length === 0 && <div style={{ fontSize: 11, color: C.textFaint, fontStyle: 'italic' }}>No entries yet. Start writing.</div>}
+                  </div>
                 </div>
                 {entries.map((e, i) => (
                   <div key={i} style={{ marginTop: 10, paddingTop: 10, borderTop: `0.5px solid ${C.border}` }}>

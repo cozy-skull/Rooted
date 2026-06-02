@@ -43,7 +43,7 @@ function WelcomeScreen({ onNext }) {
       position: 'fixed', inset: 0, background: '#080604', zIndex: 10000,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'space-between', overflow: 'hidden',
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "'Lora', Georgia, serif",
     }}>
       {/* Top — welcome image, takes ~58% of screen height */}
       <div style={{ width: '100%', flex: '0 0 58%', overflow: 'hidden', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
@@ -144,7 +144,7 @@ function FeaturesScreen({ onNext }) {
         position: 'fixed', inset: 0, background: '#080604', zIndex: 10000,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', padding: '40px 28px',
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "'Lora', Georgia, serif",
         userSelect: 'none',
       }}
       onTouchStart={handleTouchStart}
@@ -270,7 +270,7 @@ function AccountScreen({ onComplete, onSkip }) {
     width: '100%', padding: '14px 16px', borderRadius: 12,
     border: `1.5px solid #2a2820`, background: '#0f0e0b',
     color: '#e8dfc8', fontSize: 15, boxSizing: 'border-box',
-    outline: 'none', fontFamily: "'DM Sans', system-ui, sans-serif",
+    outline: 'none', fontFamily: "'Lora', Georgia, serif",
     marginBottom: 12,
   }
 
@@ -279,7 +279,7 @@ function AccountScreen({ onComplete, onSkip }) {
       position: 'fixed', inset: 0, background: '#080604', zIndex: 10000,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', padding: '28px',
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "'Lora', Georgia, serif",
       overflowY: 'auto',
     }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
@@ -439,7 +439,7 @@ function AccountSkip({ onComplete }) {
     border: `1.5px solid ${custom ? '#7ec850' : '#2a2820'}`,
     background: '#0f0e0b', color: '#e8dfc8', fontSize: 15,
     boxSizing: 'border-box', outline: 'none',
-    fontFamily: "'DM Sans', system-ui, sans-serif", marginBottom: 16,
+    fontFamily: "'Lora', Georgia, serif", marginBottom: 16,
   }
 
   return (
@@ -447,7 +447,7 @@ function AccountSkip({ onComplete }) {
       position: 'fixed', inset: 0, background: '#080604', zIndex: 10000,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', padding: '28px',
-      fontFamily: "'DM Sans', system-ui, sans-serif",
+      fontFamily: "'Lora', Georgia, serif",
     }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>

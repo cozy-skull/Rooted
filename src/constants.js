@@ -441,3 +441,37 @@ export function searchPlantDB(query) {
     p.name.toLowerCase().includes(q)
   ).slice(0, 5)
 }
+
+// ── Greenhouse Wisdom (rotating daily card) ──────────────────────────────────
+export const WISDOM = [
+  'Water the soil, not the guilt.',
+  'Dead leaves happen. New growth follows.',
+  'Growth isn\'t always visible.',
+  'Check the roots before the panic.',
+  'A little neglect builds resilience.',
+  'Every plant has a season.',
+  'Repotting is just making room.',
+  'Some plants thrive on being ignored.',
+  'The struggle is part of the story.',
+  'Not every leaf needs to be perfect.',
+  'Patience is the best fertilizer.',
+  'Even the drama queens deserve care.',
+  'Dormancy isn\'t death. It\'s rest.',
+  'The slow growers are worth it.',
+  'Tending plants is tending yourself.',
+  'A healthy root system changes everything.',
+  'Not all yellowing means failure.',
+  'Soil tells the truth. Listen to it.',
+  'One new leaf is enough for today.',
+  'The scraggly ones make it too.',
+]
+
+// ── Mood personality subtitles ────────────────────────────────────────────────
+export const MOOD_SUBTITLES = {
+  thriving:   'Living its best life.',
+  okay:       'Unbothered. Mostly.',
+  struggling: 'Needs a little support.',
+  crisis:     'May require snacks and emotional support.',
+  dormant:    'Resting. Do not disturb.',
+  drama:      'Absolutely fine. Allegedly.',
+}
