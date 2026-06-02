@@ -34,7 +34,7 @@ function PropLabModal({ plants, onUpdatePlant, onNavigate, onClose, C, sCard, sH
       <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1 }}>←</button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: 'Playfair Display, serif', fontSize: 18, fontWeight: 700, color: C.text }}>✂️ Propagation Lab</div>
+          <div style={{ fontFamily: "'Lora', Georgia, serif", fontSize: 18, fontWeight: 700, color: C.text }}>✂️ Propagation Lab</div>
           <div style={{ fontSize: 11, color: C.textMuted, marginTop: 1 }}>{allProps.length} total across {plants.filter(p => p.propagations?.length).length} plants</div>
         </div>
       </div>
@@ -59,7 +59,7 @@ function PropLabModal({ plants, onUpdatePlant, onNavigate, onClose, C, sCard, sH
         )}
         {filtered.map(prop => (
           <div key={`${prop.plantId}-${prop.id}`} onClick={() => onNavigate(prop.plantId)}
-            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px', marginBottom: 10, cursor: 'pointer' }}>
+            style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 16px', marginBottom: 10, cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 20 }}>{prop.plantEmoji}</span>
               <div style={{ flex: 1 }}>
@@ -459,7 +459,7 @@ export default function App() {
     const spBadges = sp.badges || []
 
     return (
-      <div style={{ fontFamily: "'Lora', Georgia, serif", maxWidth: 680, margin: '0 auto', padding: '0 0 80px', background: C.bg, minHeight: '100vh', color: C.text }}>
+      <div style={appStyle}>
         <Confetti active={confetti} onDone={() => setConfetti(false)} />
 
       {/* New badge notification */}
@@ -521,7 +521,7 @@ export default function App() {
           ))}
         </div>
 
-        <div style={{ padding: '12px 14px' }}>
+        <div style={{ padding: '12px 16px' }}>
           {plantTab === 'overview' && (
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
@@ -896,7 +896,7 @@ export default function App() {
       {showCaretaker && (
         <Sheet>
           <div style={sBtwn}><div style={sH(16)}>📋 Caretaker Sheet</div><button style={sBtnS} onClick={() => setShowCaretaker(false)}>✕</button></div>
-          {vacNotes && <div style={{ background: C.locBg, border: `1px solid ${C.locBorder}`, borderRadius: 12, padding: '12px 14px', margin: '12px 0' }}><div style={sLbl}>Instructions</div><div style={{ fontSize: 13, color: C.locText, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{vacNotes}</div></div>}
+          {vacNotes && <div style={{ background: C.locBg, border: `1px solid ${C.locBorder}`, borderRadius: 12, padding: '12px 16px', margin: '12px 0' }}><div style={sLbl}>Instructions</div><div style={{ fontSize: 13, color: C.locText, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{vacNotes}</div></div>}
           {plants.map(p => (
             <div key={p.id} style={sCard({ marginBottom: 8 })}>
               <div style={sRow}>
@@ -993,7 +993,7 @@ export default function App() {
 
       {/* ── GREENHOUSE ─────────────────────────────────────────────────────── */}
       {tab === 'greenhouse' && (
-        <div style={{ padding: '12px 14px' }}>
+        <div style={{ padding: '12px 16px' }}>
           {/* Seasonal banner */}
         <div style={{ background: seasonTheme.accent + '15', border: `1px solid ${seasonTheme.accent}33`, borderRadius: 12, padding: '8px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ fontSize: 16 }}>{season === 'spring' ? '🌸' : season === 'summer' ? '🌻' : season === 'autumn' ? '🍂' : '❄️'}</div>
@@ -1003,66 +1003,113 @@ export default function App() {
           </div>
         </div>
 
-        {/* Watering Zones — always visible */}
+        {/* ── WATERING ZONES — primary dashboard feature ────────────────── */}
         {(() => {
           const todayDay = new Date().getDay()
           const zones = JSON.parse(localStorage.getItem('rr_zones') || 'null') || []
           const todayZones = zones.filter(z => z.days && z.days.includes(todayDay))
           const isPropDay = todayDay === 0
           const allProps = plants.flatMap(p => (p.propagations||[]).filter(pr=>pr.status==='Rooting'))
+          const totalAssigned = plants.filter(p => p.wateringZone).length
           const hasActivity = todayZones.length > 0 || (isPropDay && allProps.length > 0)
 
           return (
-            <div style={{ marginBottom: 12 }}>
-              {hasActivity && (
+            <div style={{ marginBottom: 20 }}>
+              {/* Section header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ZoneIcon size={16} color={C.accent} />
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.accent }}>Watering Zones</span>
+                </div>
+                <button onClick={() => setShowZones(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: C.textMuted, padding: '2px 6px' }}>
+                  Manage →
+                </button>
+              </div>
+
+              {zones.length === 0 ? (
+                /* Empty state — invite to set up */
+                <div onClick={() => setShowZones(true)} style={{ background: C.bgCard, border: `1.5px dashed ${C.accent}44`, borderRadius: 14, padding: '18px 16px', cursor: 'pointer', textAlign: 'center' }}>
+                  <ZoneIcon size={28} color={C.accent} style={{ opacity: 0.5, margin: '0 auto 10px' }} />
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 }}>Set up Watering Zones</div>
+                  <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.6, maxWidth: 260, margin: '0 auto' }}>
+                    Group your plants by watering schedule. Never wonder who needs water again.
+                  </div>
+                  <div style={{ marginTop: 12, display: 'inline-block', padding: '7px 18px', borderRadius: 20, border: `1px solid ${C.accent}`, color: C.accent, fontSize: 12, fontWeight: 700 }}>
+                    Get started
+                  </div>
+                </div>
+              ) : (
                 <>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>📅 Today's zone review</div>
-                  {todayZones.map(zone => {
-                    const count = plants.filter(p => p.wateringZone === zone.id).length
-                    return (
-                      <div key={zone.id} onClick={() => setShowZones(true)} style={{ background: (zone.color||'#7ec850') + '15', border: `1.5px solid ${zone.color||'#7ec850'}44`, borderRadius: 14, padding: '11px 14px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 22 }}>{zone.icon||'💧'}</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: zone.color||'#7ec850' }}>{zone.name}</div>
-                          <div style={{ fontSize: 11, color: C.textMuted }}>{count} plants to review · Check before you water</div>
+                  {/* Zone overview grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(zones.length, 2)}, 1fr)`, gap: 8, marginBottom: hasActivity ? 12 : 0 }}>
+                    {zones.slice(0, 4).map(zone => {
+                      const count = plants.filter(p => p.wateringZone === zone.id).length
+                      const isToday = todayZones.some(z => z.id === zone.id)
+                      return (
+                        <div key={zone.id} onClick={() => setShowZones(true)} style={{
+                          background: isToday ? (zone.color||C.accent) + '20' : C.bgCard,
+                          border: `1.5px solid ${isToday ? (zone.color||C.accent) + '66' : C.border}`,
+                          borderRadius: 12, padding: '10px 12px', cursor: 'pointer',
+                          transition: 'border-color 0.2s',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: 16 }}>{zone.icon || '💧'}</span>
+                            {isToday && <span style={{ fontSize: 9, fontWeight: 700, color: zone.color||C.accent, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Today</span>}
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: isToday ? (zone.color||C.accent) : C.text, marginBottom: 2 }}>{zone.name}</div>
+                          <div style={{ fontSize: 11, color: C.textMuted }}>{count} plant{count !== 1 ? 's' : ''}</div>
                         </div>
-                        <div style={{ background: zone.color||'#7ec850', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Today's active zone actions */}
+                  {hasActivity && (
+                    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold }}>
+                        Due today
                       </div>
-                    )
-                  })}
-                  {isPropDay && allProps.length > 0 && (
-                    <div onClick={() => setShowZones(true)} style={{ background: '#c8922a15', border: '1.5px solid #c8922a44', borderRadius: 14, padding: '11px 14px', marginBottom: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 22 }}>✂️</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#c8922a' }}>Prop Zone Sunday</div>
-                        <div style={{ fontSize: 11, color: C.textMuted }}>{allProps.length} active props to check</div>
-                      </div>
-                      <div style={{ background: '#c8922a', color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review →</div>
+                      {todayZones.map(zone => {
+                        const count = plants.filter(p => p.wateringZone === zone.id).length
+                        return (
+                          <div key={zone.id} onClick={() => setShowZones(true)} style={{ padding: '10px 12px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                            <span style={{ fontSize: 18 }}>{zone.icon||'💧'}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: zone.color||C.accent }}>{zone.name}</div>
+                              <div style={{ fontSize: 11, color: C.textMuted }}>{count} plants to check</div>
+                            </div>
+                            <div style={{ background: zone.color||C.accent, color: '#fff', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review</div>
+                          </div>
+                        )
+                      })}
+                      {isPropDay && allProps.length > 0 && (
+                        <div onClick={() => setShowZones(true)} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                          <ScissorsIcon size={18} color={C.gold} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: C.gold }}>Prop Zone</div>
+                            <div style={{ fontSize: 11, color: C.textMuted }}>{allProps.length} active props to check</div>
+                          </div>
+                          <div style={{ background: C.gold, color: '#0d0c09', borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 700 }}>Review</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Summary line */}
+                  {!hasActivity && (
+                    <div style={{ fontSize: 11, color: C.textMuted, textAlign: 'center', paddingTop: 4 }}>
+                      {totalAssigned} of {plants.length} plants assigned · No zones scheduled today
                     </div>
                   )}
                 </>
               )}
-
-              {/* Persistent zones quick-access bar */}
-              <div onClick={() => setShowZones(true)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 18 }}>💧</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Watering Zones</div>
-                  <div style={{ fontSize: 11, color: C.textMuted }}>
-                    {zones.length === 0
-                      ? 'Set up zones to organize your watering schedule'
-                      : `${zones.length} zone${zones.length > 1 ? 's' : ''} · ${plants.filter(p => p.wateringZone).length} plants assigned`}
-                  </div>
-                </div>
-                <div style={{ fontSize: 13, color: C.textMuted }}>→</div>
-              </div>
             </div>
           )
         })()}
 
         {/* How's the gang doing */}
-        <div style={sCard({ marginBottom: 12, padding: '12px 14px' })}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 10 }}>How's the gang doing?</div>
+        <div style={sCard({ marginBottom: 12, padding: '12px 16px' })}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 10 }}>How's the gang doing?</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
               { icon: '🌱', val: plants.filter(p => p.mood === 'thriving').length, label: 'Thriving', col: '#7ec850' },
@@ -1073,7 +1120,7 @@ export default function App() {
               <div key={i} style={{ background: C.bgSubtle, borderRadius: 10, padding: '10px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 20 }}>{s.icon}</span>
                 <div>
-                  <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 20, fontWeight: 700, color: s.col, lineHeight: 1 }}>{s.val}</div>
+                  <div style={{ fontFamily: "'Lora', Georgia, serif", fontSize: 20, fontWeight: 700, color: s.col, lineHeight: 1 }}>{s.val}</div>
                   <div style={{ fontSize: 10, color: C.textMuted }}>{s.label}</div>
                 </div>
               </div>
@@ -1089,7 +1136,7 @@ export default function App() {
             ].map((s, i) => (
               <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 14, padding: '12px 8px', textAlign: 'center' }}>
                 <div style={{ fontSize: 22, marginBottom: 2 }}>{s.icon}</div>
-                <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 24, fontWeight: 700, color: s.col }}>{s.val}</div>
+                <div style={{ fontFamily: "'Lora', Georgia, serif", fontSize: 24, fontWeight: 700, color: s.col }}>{s.val}</div>
                 <div style={{ fontSize: 10, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
               </div>
             ))}
@@ -1098,7 +1145,8 @@ export default function App() {
           {/* Greenhouse Wisdom */}
           <div style={sCard({ marginBottom: 10, borderColor: C.gold + '33', background: C.gold + '08' })}>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <LeafIcon size={12} color={C.gold} /> Greenhouse Wisdom
+              <LeafIcon size={11} color={C.gold} />
+              <span>Greenhouse Wisdom</span>
             </div>
             <div style={{ fontSize: 14, color: C.text, lineHeight: 1.7, fontStyle: 'italic' }}>"{wisdom}"</div>
           </div>
@@ -1112,9 +1160,9 @@ export default function App() {
 
           {urgent.length > 0 && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.dangerText, marginBottom: 10 }}>Needs attention 👀</div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.dangerText, marginBottom: 10 }}>Needs attention</div>
               {urgent.map(p => (
-                <div key={p.id} style={{ background: C.danger, border: `1px solid ${C.dangerBorder}`, borderRadius: 14, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => setSelectedId(p.id)}>
+                <div key={p.id} style={{ background: C.danger, border: `1px solid ${C.dangerBorder}`, borderRadius: 14, padding: '12px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => setSelectedId(p.id)}>
                   <div><div style={{ fontWeight: 600, fontSize: 14, color: C.dangerText }}>{p.nickname || p.name}</div><div style={{ fontSize: 11, color: C.dangerText, marginTop: 2, opacity: 0.8 }}>{waterStatus(p).label}</div></div>
                   <button style={{ padding: '6px 14px', borderRadius: 9, border: `1px solid ${C.accent}`, background: 'transparent', color: C.accent, fontSize: 12, cursor: 'pointer' }} onClick={e => { e.stopPropagation(); waterPlant(p.id) }}>Water 💧</button>
                 </div>
@@ -1235,7 +1283,7 @@ export default function App() {
 
       {/* ── COLLECTION ─────────────────────────────────────────────────────── */}
       {tab === 'collection' && (
-        <div style={{ padding: '12px 14px' }}>
+        <div style={{ padding: '12px 16px' }}>
           <div style={sBtwn}>
             <select style={{ ...sInp, width: 'auto', fontSize: 13 }} value={roomFilter} onChange={e => setRoomFilter(e.target.value)}>
               {ROOMS.map(r => <option key={r}>{r}</option>)}
@@ -1386,7 +1434,7 @@ export default function App() {
 
       {/* ── PLANT ER ───────────────────────────────────────────────────────── */}
       {tab === 'planterr' && (
-        <div style={{ padding: '12px 14px' }}>
+        <div style={{ padding: '12px 16px' }}>
           <div style={sH(21)}>Plant ER 🚑</div>
           <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16, fontStyle: 'italic' }}>Something weird growing on your plant? Leaf looking suspicious? We've got you.</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -1437,7 +1485,7 @@ export default function App() {
 
       {/* ── COMMUNITY ──────────────────────────────────────────────────────── */}
       {tab === 'community' && (
-        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 48 }}>
+        <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 48 }}>
 
           {/* Teapot illustration area */}
           <div style={{ fontSize: 64, marginBottom: 20, filter: 'grayscale(30%)', opacity: 0.85 }}>☕</div>
@@ -1488,7 +1536,7 @@ export default function App() {
 
       {/* ── JOURNAL ────────────────────────────────────────────────────────── */}
       {tab === 'journal' && (
-        <div style={{ padding: '12px 14px' }}>
+        <div style={{ padding: '12px 16px' }}>
           <div style={sH(21)}>Growth Journal 📖</div>
           <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16, fontStyle: 'italic' }}>The living record of your plants.</div>
           {plants.length === 0 && <div style={{ color: C.textMuted, fontSize: 13, textAlign: 'center', padding: '2rem 0', fontStyle: 'italic' }}>Add some plants first and your journal will come alive.</div>}
