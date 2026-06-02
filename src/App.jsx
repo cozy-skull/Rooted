@@ -3,7 +3,7 @@ import iconLogo from './assets/icon.png'
 import splashLogo from './assets/splash.png'
 import SplashScreen from './SplashScreen'
 import { Ring, Confetti, Modal, Sheet, EmojiPick, sBtn, sBtnP, sBtnS, sInp, sLbl, sBtwn, sRow, sCard, sTab, sBdg, sH, sAv } from './components'
-import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges } from './constants'
+import { C, MOOD_COLOR, MOODS, ROOMS, PESTS, VERDICTS, PLANT_BADGES, EMOJIS, INIT_PLANTS, INIT_POSTS, QUOTES, TASKS, SPACE_NAMES, PROFILE_BADGES, SEASONAL_THEMES, getSeason, daysAgo, waterStatus, sassyMsg, getGreeting, ls, lsSet, setThemeColors, checkAutoEarnBadges, checkProfileBadges, searchPlantDB, PLANT_DB } from './constants'
 import GrowthTimeline from './GrowthTimeline'
 import { AboutRooted, AboutCozySkull } from './AboutPages'
 import { RecoveryMode, PhotoDiagnosis } from './RecoveryMode'
@@ -97,6 +97,8 @@ export default function App() {
   const [dailyTask] = useState(() => TASKS[new Date().getDay()])
   const [verdict] = useState(() => VERDICTS[Math.floor(Math.random() * VERDICTS.length)])
   const [newPlant, setNewPlant] = useState({ name: '', nickname: '', room: 'Living Room', species: '', waterFreqDays: 7, fertilizeFreqDays: 30, repotFreqDays: 365, notes: '', photo: null, emoji: '🌿', acquiredDate: '', rescueStory: '', giftedFrom: '' })
+  const [plantSearch, setPlantSearch] = useState('')
+  const [plantSuggestions, setPlantSuggestions] = useState([])
   const [aiMode, setAiMode] = useState('id')
   const [aiInput, setAiInput] = useState('')
   const [aiResult, setAiResult] = useState('')
@@ -133,6 +135,8 @@ export default function App() {
   const [journalInput, setJournalInput] = useState('')
   const [showPestForm, setShowPestForm] = useState(false)
   const [showPropForm, setShowPropForm] = useState(false)
+  const [healthSection, setHealthSection] = useState('pests')
+  const [logSection, setLogSection] = useState('journal')
   const [pestInput, setPestInput] = useState({ type: '', treatment: '' })
   const [propInput, setPropInput] = useState({ method: '', notes: '', available: false })
   const photoRef = useRef()
@@ -442,7 +446,7 @@ export default function App() {
       )}
         <div style={{ padding: '0.9rem 1rem', borderBottom: `1px solid ${C.border}`, background: `linear-gradient(180deg, #1c1910 0%, ${C.bg} 100%)` }}>
           <div style={sBtwn}>
-            <button style={{ ...sBtn, padding: '5px 12px', fontSize: 12 }} onClick={() => { setSelectedId(null); setPlantTab('overview') }}>← Back</button>
+            <button style={{ ...sBtn, padding: '5px 12px', fontSize: 12 }} onClick={() => { setSelectedId(null); setPlantTab('overview'); setHealthSection('pests'); setLogSection('journal') }}>← Back</button>
             <button style={{ ...sBtn, color: C.dangerText, borderColor: C.dangerBorder, fontSize: 12, padding: '5px 12px' }} onClick={() => delPlant(sp.id)}>Delete</button>
           </div>
           <div style={{ ...sRow, marginTop: 12 }}>
@@ -460,8 +464,14 @@ export default function App() {
         </div>
 
         <div style={{ display: 'flex', gap: 6, padding: '0.75rem 1rem', overflowX: 'auto', background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-          {['overview','care','memory','pests','recovery','propagations','journal','timeline'].map(t => (
-            <button key={t} style={{ ...sTab(plantTab === t), flexShrink: 0, fontSize: 11 }} onClick={() => setPlantTab(t)}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>
+          {[
+            { id: 'overview', label: 'Overview' },
+            { id: 'care', label: 'Care' },
+            { id: 'health', label: spPests.filter(p => !p.treated).length > 0 || (sp.recovery && sp.recovery.active) ? '🚨 Health' : 'Health' },
+            { id: 'propagations', label: 'Props' },
+            { id: 'log', label: 'Log' },
+          ].map(t => (
+            <button key={t.id} style={{ ...sTab(plantTab === t.id), flexShrink: 0, fontSize: 11 }} onClick={() => setPlantTab(t.id)}>{t.label}</button>
           ))}
         </div>
 
@@ -530,129 +540,188 @@ export default function App() {
             </div>
           )}
 
-          {plantTab === 'memory' && (
-            <div>
-              <div style={{ ...sH(16), marginBottom: 8 }}>Memory Vault 🖤</div>
-              <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 16, fontStyle: 'italic', lineHeight: 1.6 }}>The story of this plant. Where it came from, what it has been through, what makes it yours.</div>
-              <div style={{ marginBottom: 12 }}><div style={sLbl}>Acquired date</div><input style={sInp} type="date" value={sp.acquiredDate || ''} onChange={e => updatePlant(sp.id, { acquiredDate: e.target.value })} /></div>
-              <div style={{ marginBottom: 12 }}><div style={sLbl}>Gifted from</div><input style={sInp} placeholder="Who gave you this plant?" value={sp.giftedFrom || ''} onChange={e => updatePlant(sp.id, { giftedFrom: e.target.value })} /></div>
-              <div style={{ marginBottom: 12 }}><div style={sLbl}>Rescue story</div><textarea style={{ ...sInp, minHeight: 90, resize: 'vertical' }} placeholder="Found at a gas station for $2. Almost dead. Look at it now." value={sp.rescueStory || ''} onChange={e => updatePlant(sp.id, { rescueStory: e.target.value })} /></div>
-              <div>
-                <div style={sLbl}>Milestones</div>
-                {(sp.milestones || []).map((m, i) => (
-                  <div key={i} style={{ background: C.bgSubtle, borderRadius: 10, padding: '8px 12px', marginBottom: 6, border: `0.5px solid ${C.border}`, fontSize: 13 }}>
-                    {m.date ? new Date(m.date).toLocaleDateString() + ' — ' : ''}{m.text}
-                  </div>
-                ))}
-                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                  <input id="mstone" style={{ ...sInp, flex: 1 }} placeholder="First leaf, survived pests, first flower..."
-                    onKeyDown={e => { if (e.key === 'Enter' && e.target.value.trim()) { updatePlant(sp.id, { milestones: [...(sp.milestones||[]), { text: e.target.value.trim(), date: new Date().toISOString() }] }); e.target.value = '' } }} />
-                  <button style={sBtnP} onClick={() => { const inp = document.getElementById('mstone'); if (inp?.value.trim()) { updatePlant(sp.id, { milestones: [...(sp.milestones||[]), { text: inp.value.trim(), date: new Date().toISOString() }] }); inp.value = '' } }}>Add</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {plantTab === 'memory' && null}
 
-          {plantTab === 'pests' && (
+          {/* ── HEALTH tab: Pests + Recovery merged ── */}
+          {plantTab === 'health' && (
             <div>
-              <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12, fontStyle: 'italic' }}>Tap a pest to log it with a pre-filled treatment plan.</div>
-              <div style={sLbl}>Common pests</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                {PESTS.map(pest => {
-                  const active = spPests.find(p => p.pestId === pest.id && !p.treated)
-                  return (
-                    <button key={pest.id} style={{ ...sBtn, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '8px 10px', opacity: active ? 0.4 : 1 }}
-                      onClick={() => { if (active) return; updatePlant(sp.id, { pests: [...spPests, { id: Date.now(), pestId: pest.id, type: pest.name, treatment: pest.treatment, sprayFreq: pest.sprayFreq, lastSprayed: null, date: new Date().toISOString(), treated: false }] }) }}>
-                      <span style={{ fontSize: 18 }}>{pest.icon}</span>{pest.name}
-                    </button>
-                  )
-                })}
-              </div>
-              <button style={{ ...sBtnS, borderColor: C.accent, color: C.accent, marginBottom: 12 }} onClick={() => setShowPestForm(v => !v)}>+ Custom pest</button>
-              {showPestForm && (
-                <div style={sCard({ marginBottom: 12 })}>
-                  <div style={{ marginBottom: 8 }}><div style={sLbl}>Pest type</div><input style={sInp} value={pestInput.type} onChange={e => setPestInput(p => ({ ...p, type: e.target.value }))} /></div>
-                  <div style={{ marginBottom: 8 }}><div style={sLbl}>Treatment</div><input style={sInp} value={pestInput.treatment} onChange={e => setPestInput(p => ({ ...p, treatment: e.target.value }))} /></div>
-                  <div style={{ display: 'flex', gap: 8 }}><button style={sBtnP} onClick={addPest}>Save</button><button style={sBtn} onClick={() => setShowPestForm(false)}>Cancel</button></div>
+              {/* Recovery banner if active */}
+              {sp.recovery && sp.recovery.active && (
+                <div style={{ background: '#c94f4f22', border: '1px solid #c94f4f55', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>🏥</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: '#c94f4f' }}>In Recovery Mode</div>
+                    <div style={{ fontSize: 11, color: C.textMuted }}>Tracking treatment progress</div>
+                  </div>
+                  <button style={{ ...sBtnP, fontSize: 11, padding: '5px 12px', background: '#c94f4f' }} onClick={() => setHealthSection('recovery')}>View →</button>
                 </div>
               )}
-              {spPests.length === 0 && <div style={{ color: C.textMuted, fontSize: 13, fontStyle: 'italic' }}>No pest issues. Living the dream.</div>}
-              {spPests.map(pest => {
-                const preset = PESTS.find(p => p.id === pest.pestId)
-                const ds = daysAgo(pest.lastSprayed)
-                const due = pest.sprayFreq && (ds === null || ds >= pest.sprayFreq)
-                return (
-                  <div key={pest.id} style={sCard({ marginTop: 10, borderColor: pest.treated ? C.border : '#d4934a66' })}>
-                    <div style={sBtwn}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{preset && <span style={{ fontSize: 20 }}>{preset.icon}</span>}<div style={{ fontWeight: 600 }}>{pest.type}</div></div>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <span style={sBdg(pest.treated ? '#7ec850' : '#c94f4f')}>{pest.treated ? 'Treated' : 'Active'}</span>
-                        <button style={sBtnS} onClick={() => updatePlant(sp.id, { pests: spPests.map(p => p.id === pest.id ? { ...p, treated: !p.treated } : p) })}>{pest.treated ? 'Reopen' : 'Mark treated'}</button>
+
+              {/* Active pest alerts */}
+              {spPests.filter(p => !p.treated).length > 0 && (
+                <div style={{ background: '#d4934a22', border: '1px solid #d4934a55', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 20 }}>🪲</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: '#d4934a' }}>{spPests.filter(p => !p.treated).length} active pest issue{spPests.filter(p => !p.treated).length > 1 ? 's' : ''}</div>
+                    <div style={{ fontSize: 11, color: C.textMuted }}>{spPests.filter(p => !p.treated).map(p => p.type).join(', ')}</div>
+                  </div>
+                  <button style={{ ...sBtn, fontSize: 11, padding: '5px 12px' }} onClick={() => setHealthSection('pests')}>Manage →</button>
+                </div>
+              )}
+
+              {/* Section toggle */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                {[{ id: 'pests', label: '🪲 Pests' }, { id: 'recovery', label: '🏥 Recovery' }].map(s => (
+                  <button key={s.id} style={{ ...sTab(healthSection === s.id), fontSize: 12 }} onClick={() => setHealthSection(s.id)}>{s.label}</button>
+                ))}
+              </div>
+
+              {/* PESTS section */}
+              {healthSection === 'pests' && (
+                <div>
+                  <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 12, fontStyle: 'italic' }}>Tap a pest to log it with a pre-filled treatment plan.</div>
+                  <div style={sLbl}>Common pests</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                    {PESTS.map(pest => {
+                      const active = spPests.find(p => p.pestId === pest.id && !p.treated)
+                      return (
+                        <button key={pest.id} style={{ ...sBtn, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '8px 10px', opacity: active ? 0.4 : 1 }}
+                          onClick={() => { if (active) return; updatePlant(sp.id, { pests: [...spPests, { id: Date.now(), pestId: pest.id, type: pest.name, treatment: pest.treatment, sprayFreq: pest.sprayFreq, lastSprayed: null, date: new Date().toISOString(), treated: false }] }) }}>
+                          <span style={{ fontSize: 18 }}>{pest.icon}</span>{pest.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <button style={{ ...sBtnS, borderColor: C.accent, color: C.accent, marginBottom: 12 }} onClick={() => setShowPestForm(v => !v)}>+ Custom pest</button>
+                  {showPestForm && (
+                    <div style={sCard({ marginBottom: 12 })}>
+                      <div style={{ marginBottom: 8 }}><div style={sLbl}>Pest type</div><input style={sInp} value={pestInput.type} onChange={e => setPestInput(p => ({ ...p, type: e.target.value }))} /></div>
+                      <div style={{ marginBottom: 8 }}><div style={sLbl}>Treatment</div><input style={sInp} value={pestInput.treatment} onChange={e => setPestInput(p => ({ ...p, treatment: e.target.value }))} /></div>
+                      <div style={{ display: 'flex', gap: 8 }}><button style={sBtnP} onClick={addPest}>Save</button><button style={sBtn} onClick={() => setShowPestForm(false)}>Cancel</button></div>
+                    </div>
+                  )}
+                  {spPests.length === 0 && <div style={{ color: C.textMuted, fontSize: 13, fontStyle: 'italic' }}>No pest issues. Living the dream.</div>}
+                  {spPests.map(pest => {
+                    const preset = PESTS.find(p => p.id === pest.pestId)
+                    const ds = daysAgo(pest.lastSprayed)
+                    const due = pest.sprayFreq && (ds === null || ds >= pest.sprayFreq)
+                    return (
+                      <div key={pest.id} style={sCard({ marginTop: 10, borderColor: pest.treated ? C.border : '#d4934a66' })}>
+                        <div style={sBtwn}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{preset && <span style={{ fontSize: 20 }}>{preset.icon}</span>}<div style={{ fontWeight: 600 }}>{pest.type}</div></div>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <span style={sBdg(pest.treated ? '#7ec850' : '#c94f4f')}>{pest.treated ? 'Treated' : 'Active'}</span>
+                            <button style={sBtnS} onClick={() => updatePlant(sp.id, { pests: spPests.map(p => p.id === pest.id ? { ...p, treated: !p.treated } : p) })}>{pest.treated ? 'Reopen' : 'Mark treated'}</button>
+                          </div>
+                        </div>
+                        {pest.treatment && <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 10, background: C.bgSubtle, fontSize: 12, lineHeight: 1.6, border: `0.5px solid ${C.border}` }}><div style={{ fontWeight: 700, color: C.accent, marginBottom: 4, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Treatment plan</div>{pest.treatment}</div>}
+                        {pest.sprayFreq && !pest.treated && (
+                          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, background: due ? C.danger : C.bgSubtle, border: `1px solid ${due ? C.dangerBorder : C.border}` }}>
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: due ? C.dangerText : C.text }}>🧴 Every {pest.sprayFreq}d</div>
+                              <div style={{ fontSize: 11, color: due ? C.dangerText : C.textMuted, marginTop: 2 }}>{pest.lastSprayed ? (due ? `Overdue! Last ${ds}d ago` : `Last ${ds}d ago — next in ${pest.sprayFreq - ds}d`) : 'Start today!'}</div>
+                            </div>
+                            <button style={{ ...sBtnP, fontSize: 11, padding: '5px 12px', background: due ? '#c94f4f' : C.accent }} onClick={() => updatePlant(sp.id, { pests: spPests.map(p => p.id === pest.id ? { ...p, lastSprayed: new Date().toISOString() } : p) })}>Sprayed ✓</button>
+                          </div>
+                        )}
+                        <button style={{ ...sBtnS, marginTop: 8, color: C.dangerText, borderColor: C.dangerBorder, fontSize: 11 }} onClick={() => updatePlant(sp.id, { pests: spPests.filter(p => p.id !== pest.id) })}>Remove</button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* RECOVERY section */}
+              {healthSection === 'recovery' && (
+                <div>
+                  {showPhotoDiagnosis && (
+                    <PhotoDiagnosis
+                      plant={sp}
+                      onResult={({ photo, diagnosis }) => {
+                        updatePlant(sp.id, {
+                          mood: 'crisis',
+                          recovery: { ...(sp.recovery || {}), active: true, startDate: (sp.recovery||{}).startDate || new Date().toISOString(), diagnosis, diagnosisPhoto: photo }
+                        })
+                      }}
+                      onClose={() => setShowPhotoDiagnosis(false)}
+                    />
+                  )}
+                  {!(sp.recovery && sp.recovery.active) ? (
+                    <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                      <div style={{ fontSize: 48, marginBottom: 14 }}>🏥</div>
+                      <div style={{ ...sH(16), marginBottom: 8 }}>Recovery Mode</div>
+                      <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>When a plant is struggling, move it into Recovery Mode. Track treatments, progress photos, and the full recovery timeline.</div>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <button style={sBtnP} onClick={() => { updatePlant(sp.id, { mood: 'crisis', recovery: { active: true, startDate: new Date().toISOString(), checkIns: [] } }) }}>Start Recovery Mode</button>
+                        <button style={sBtn} onClick={() => setShowPhotoDiagnosis(true)}>📸 Diagnose with photo</button>
                       </div>
                     </div>
-                    {pest.treatment && <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 10, background: C.bgSubtle, fontSize: 12, lineHeight: 1.6, border: `0.5px solid ${C.border}` }}><div style={{ fontWeight: 700, color: C.accent, marginBottom: 4, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Treatment plan</div>{pest.treatment}</div>}
-                    {pest.sprayFreq && !pest.treated && (
-                      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: 10, background: due ? C.danger : C.bgSubtle, border: `1px solid ${due ? C.dangerBorder : C.border}` }}>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: due ? C.dangerText : C.text }}>🧴 Every {pest.sprayFreq}d</div>
-                          <div style={{ fontSize: 11, color: due ? C.dangerText : C.textMuted, marginTop: 2 }}>{pest.lastSprayed ? (due ? `Overdue! Last ${ds}d ago` : `Last ${ds}d ago — next in ${pest.sprayFreq - ds}d`) : 'Start today!'}</div>
-                        </div>
-                        <button style={{ ...sBtnP, fontSize: 11, padding: '5px 12px', background: due ? '#c94f4f' : C.accent }} onClick={() => updatePlant(sp.id, { pests: spPests.map(p => p.id === pest.id ? { ...p, lastSprayed: new Date().toISOString() } : p) })}>Sprayed ✓</button>
-                      </div>
-                    )}
-                    <button style={{ ...sBtnS, marginTop: 8, color: C.dangerText, borderColor: C.dangerBorder, fontSize: 11 }} onClick={() => updatePlant(sp.id, { pests: spPests.filter(p => p.id !== pest.id) })}>Remove</button>
-                  </div>
-                )
-              })}
+                  ) : (
+                    <RecoveryMode plant={sp} onUpdate={updatePlant} onGraduate={() => graduateFromRecovery(sp.id)} onMemorialGarden={() => sendToMemorial(sp)} />
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {plantTab === 'recovery' && (
+          {/* ── LOG tab: Journal + Timeline merged ── */}
+          {plantTab === 'log' && (
             <div>
-              {showPhotoDiagnosis && (
-                <PhotoDiagnosis
-                  plant={sp}
-                  onResult={({ photo, diagnosis }) => {
-                    updatePlant(sp.id, {
-                      mood: 'crisis',
-                      recovery: {
-                        ...(sp.recovery || {}),
-                        active: true,
-                        startDate: (sp.recovery||{}).startDate || new Date().toISOString(),
-                        diagnosis,
-                        diagnosisPhoto: photo,
-                      }
-                    })
-                  }}
-                  onClose={() => setShowPhotoDiagnosis(false)}
-                />
-              )}
-              {!(sp.recovery && sp.recovery.active) ? (
-                <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                  <div style={{ fontSize: 48, marginBottom: 14 }}>🏥</div>
-                  <div style={{ ...sH(16), marginBottom: 8 }}>Recovery Mode</div>
-                  <div style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>
-                    When a plant is struggling, move it into Recovery Mode. Track treatments, progress photos, and the full recovery timeline.
+              {/* Log sub-toggle */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                {[{ id: 'journal', label: '📖 Journal' }, { id: 'timeline', label: '🌱 Timeline' }].map(s => (
+                  <button key={s.id} style={{ ...sTab(logSection === s.id), fontSize: 12 }} onClick={() => setLogSection(s.id)}>{s.label}</button>
+                ))}
+              </div>
+
+              {logSection === 'journal' && (
+                <div>
+                  <textarea style={{ ...sInp, minHeight: 70, resize: 'vertical' }} placeholder="How is it looking today?" value={journalInput} onChange={e => setJournalInput(e.target.value)} />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button style={sBtnP} onClick={() => addJournal(null)}>Add entry</button>
+                    <input type="file" accept="image/*" ref={jPhotoRef} style={{ display: 'none' }} onChange={e => uploadPhoto(e, photo => addJournal(photo))} />
+                    <button style={sBtn} onClick={() => jPhotoRef.current?.click()}>📷 With photo</button>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <button style={sBtnP} onClick={() => {
-                      updatePlant(sp.id, { mood: 'crisis', recovery: { active: true, startDate: new Date().toISOString(), checkIns: [] } })
-                    }}>Start Recovery Mode</button>
-                    <button style={sBtn} onClick={() => setShowPhotoDiagnosis(true)}>📸 Diagnose with photo</button>
+                  {spJournal.length === 0 && <div style={{ color: C.textMuted, fontSize: 13, marginTop: 16, fontStyle: 'italic' }}>No entries yet. Start documenting.</div>}
+                  {[...spJournal].reverse().map(entry => (
+                    <div key={entry.id} style={sCard({ marginTop: 12 })}>
+                      <div style={{ fontSize: 11, color: C.textMuted }}>{new Date(entry.date).toLocaleDateString()}</div>
+                      {entry.photo && <img src={entry.photo} alt="" style={{ width: '100%', borderRadius: 10, marginTop: 8, maxHeight: 200, objectFit: 'cover' }} />}
+                      {entry.note && <div style={{ fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>{entry.note}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {logSection === 'timeline' && (
+                <GrowthTimeline plant={sp} />
+              )}
+
+              {/* Memory Vault — tucked into Log tab at bottom */}
+              {logSection === 'journal' && (
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.border}` }}>
+                  <div style={{ ...sH(14), marginBottom: 6 }}>Memory Vault 🖤</div>
+                  <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 14, fontStyle: 'italic' }}>The story of this plant.</div>
+                  <div style={{ marginBottom: 12 }}><div style={sLbl}>Acquired date</div><input style={sInp} type="date" value={sp.acquiredDate || ''} onChange={e => updatePlant(sp.id, { acquiredDate: e.target.value })} /></div>
+                  <div style={{ marginBottom: 12 }}><div style={sLbl}>Gifted from</div><input style={sInp} placeholder="Who gave you this plant?" value={sp.giftedFrom || ''} onChange={e => updatePlant(sp.id, { giftedFrom: e.target.value })} /></div>
+                  <div style={{ marginBottom: 12 }}><div style={sLbl}>Rescue story</div><textarea style={{ ...sInp, minHeight: 90, resize: 'vertical' }} placeholder="Found at a gas station for $2. Almost dead. Look at it now." value={sp.rescueStory || ''} onChange={e => updatePlant(sp.id, { rescueStory: e.target.value })} /></div>
+                  <div>
+                    <div style={sLbl}>Milestones</div>
+                    {(sp.milestones || []).map((m, i) => (
+                      <div key={i} style={{ background: C.bgSubtle, borderRadius: 10, padding: '8px 12px', marginBottom: 6, border: `0.5px solid ${C.border}`, fontSize: 13 }}>
+                        {m.date ? new Date(m.date).toLocaleDateString() + ' — ' : ''}{m.text}
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                      <input id="mstone" style={{ ...sInp, flex: 1 }} placeholder="First leaf, survived pests, first flower..."
+                        onKeyDown={e => { if (e.key === 'Enter' && e.target.value.trim()) { updatePlant(sp.id, { milestones: [...(sp.milestones||[]), { text: e.target.value.trim(), date: new Date().toISOString() }] }); e.target.value = '' } }} />
+                      <button style={sBtnP} onClick={() => { const inp = document.getElementById('mstone'); if (inp?.value.trim()) { updatePlant(sp.id, { milestones: [...(sp.milestones||[]), { text: inp.value.trim(), date: new Date().toISOString() }] }); inp.value = '' } }}>Add</button>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <RecoveryMode
-                  plant={sp}
-                  onUpdate={updatePlant}
-                  onGraduate={() => graduateFromRecovery(sp.id)}
-                  onMemorialGarden={() => sendToMemorial(sp)}
-                />
               )}
             </div>
           )}
-
-          {plantTab === 'propagations' && (
             <div>
               <div style={sBtwn}><div style={sH(15)}>Propagation Lab ✂️</div><button style={sBtnP} onClick={() => setShowPropForm(true)}>+ New</button></div>
               {showPropForm && (
@@ -1117,6 +1186,49 @@ export default function App() {
           {showAddPlant && (
             <div style={sCard({ marginTop: 12, marginBottom: 12 })}>
               <div style={{ ...sH(15), marginBottom: 12 }}>New plant 🌱</div>
+
+              {/* Plant DB search */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={sLbl}>Search plant database</div>
+                <input
+                  style={{ ...sInp, marginBottom: plantSuggestions.length ? 0 : undefined }}
+                  placeholder="e.g. Monstera, Pothos, Snake Plant..."
+                  value={plantSearch}
+                  onChange={e => {
+                    setPlantSearch(e.target.value)
+                    setPlantSuggestions(searchPlantDB(e.target.value))
+                  }}
+                />
+                {plantSuggestions.length > 0 && (
+                  <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden', marginTop: 2 }}>
+                    {plantSuggestions.map(p => (
+                      <div key={p.name} onClick={() => {
+                        setNewPlant(prev => ({ ...prev, name: p.name, species: p.name, emoji: p.emoji, waterFreqDays: p.waterFreqDays, fertilizeFreqDays: p.fertilizeFreqDays, repotFreqDays: p.repotFreqDays, notes: p.notes }))
+                        setPlantSearch('')
+                        setPlantSuggestions([])
+                      }} style={{ padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${C.border}` }}>
+                        <span style={{ fontSize: 20 }}>{p.emoji}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.name}</div>
+                          <div style={{ fontSize: 11, color: C.textMuted }}>
+                            💧 Every {p.waterFreqDays}d · {p.light} light · {p.difficulty}
+                            {p.toxicity === 'toxic' && <span style={{ color: '#c94f4f', marginLeft: 6 }}>⚠️ toxic</span>}
+                            {p.toxicity === 'safe' && <span style={{ color: C.accent, marginLeft: 6 }}>✓ pet safe</span>}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 11, color: C.accent }}>Auto-fill →</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {newPlant.species && PLANT_DB.find(p => p.name === newPlant.species) && (
+                  <div style={{ marginTop: 8, padding: '8px 12px', background: C.accent + '15', border: `1px solid ${C.accent}33`, borderRadius: 10, fontSize: 12, color: C.accent }}>
+                    ✓ Auto-filled from plant database
+                    {PLANT_DB.find(p => p.name === newPlant.species)?.toxicity === 'toxic' && <span style={{ color: '#c94f4f', marginLeft: 8 }}>⚠️ Toxic to pets</span>}
+                    {PLANT_DB.find(p => p.name === newPlant.species)?.toxicity === 'safe' && <span style={{ color: C.accent, marginLeft: 8 }}>✓ Pet safe</span>}
+                  </div>
+                )}
+              </div>
               {[['name','Plant name *'],['nickname','Nickname'],['species','Species']].map(([key, label]) => (
                 <div key={key} style={{ marginBottom: 10 }}>
                   <div style={sLbl}>{label}</div>
@@ -1281,7 +1393,7 @@ export default function App() {
           {plants.map(plant => {
             const entries = [...(plant.journal || [])].reverse().slice(0, 2)
             return (
-              <div key={plant.id} style={sCard({ marginBottom: 12, cursor: 'pointer' })} onClick={() => { setSelectedId(plant.id); setPlantTab('journal') }}>
+              <div key={plant.id} style={sCard({ marginBottom: 12, cursor: 'pointer' })} onClick={() => { setSelectedId(plant.id); setPlantTab('log'); setLogSection('journal') }}>
                 <div style={sRow}>
                   <div style={{ ...sAv(plant.photo, 42), fontSize: 22 }}>{!plant.photo && (plant.emoji || '🌿')}</div>
                   <div style={{ flex: 1 }}><div style={sH(13)}>{plant.nickname || plant.name}</div><div style={{ fontSize: 12, color: C.textMuted }}>{(plant.journal || []).length} {(plant.journal || []).length === 1 ? 'entry' : 'entries'}</div></div>
