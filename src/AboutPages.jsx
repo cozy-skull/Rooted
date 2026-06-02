@@ -159,17 +159,27 @@ export function AboutCozySkull({ onClose }) {
         onClick={onClose}
       >✕ Close</button>
 
-      {/* Cozy Skull logo — inverted so white on dark bg */}
+      {/* Cozy Skull logo — soft glow behind so black text is readable */}
       <div style={{
         width: '100%', maxWidth: 360,
         padding: '48px 2rem 0',
         display: 'flex', justifyContent: 'center',
       }}>
-        <img
-          src={cozySkullLogo}
-          alt="Cozy Skull"
-          style={{ width: '100%', height: 'auto', display: 'block', filter: 'invert(1)' }}
-        />
+        <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+          {/* Radial glow behind the image */}
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(ellipse 85% 70% at 50% 60%, #e8dfc8 0%, #c8b87a44 50%, transparent 75%)',
+            borderRadius: '50%',
+            zIndex: 0,
+          }} />
+          <img
+            src={cozySkullLogo}
+            alt="Cozy Skull"
+            style={{ width: '100%', height: 'auto', display: 'block', position: 'relative', zIndex: 1 }}
+          />
+        </div>
       </div>
 
       {/* Tagline */}

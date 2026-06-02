@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import splashImg from './assets/splash.png'
+import welcomeImg from './assets/welcome.png'
 import { C, SPACE_NAMES } from './constants'
 
 // ── Ornament divider (matches the welcome screen design) ─────────────────────
@@ -41,78 +42,77 @@ function WelcomeScreen({ onNext }) {
     <div style={{
       position: 'fixed', inset: 0, background: '#080604', zIndex: 10000,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'space-between', overflowY: 'auto',
+      justifyContent: 'space-between', overflow: 'hidden',
       fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
-      {/* Top illustration — splash image fills upper portion */}
-      <div style={{ width: '100%', maxWidth: 480, flex: '0 0 auto' }}>
+      {/* Top — welcome image, takes ~58% of screen height */}
+      <div style={{ width: '100%', flex: '0 0 58%', overflow: 'hidden', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
         <img
-          src={splashImg}
+          src={welcomeImg}
           alt="Rooted"
-          style={{ width: '100%', height: 'auto', display: 'block' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }}
         />
       </div>
 
-      {/* Bottom content */}
+      {/* Bottom — text + button, tight and centered */}
       <div style={{
-        width: '100%', maxWidth: 400, padding: '0 28px 48px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0,
-        flex: '1 1 auto', justifyContent: 'flex-end',
+        flex: '0 0 42%', width: '100%', maxWidth: 420,
+        padding: '10px 28px 24px',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Ornament style={{ marginBottom: 20 }} />
+        <div style={{ width: '100%', textAlign: 'center' }}>
+          <Ornament style={{ marginBottom: 12 }} />
 
-        <div style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 26, fontWeight: 700, color: '#e8dfc8',
-          textAlign: 'center', marginBottom: 14, lineHeight: 1.2,
-        }}>
-          Welcome to ROOTED.
-        </div>
-
-        <Ornament style={{ marginBottom: 16 }} />
-
-        <div style={{
-          fontSize: 15, color: '#a09070', textAlign: 'center',
-          lineHeight: 1.8, marginBottom: 28, maxWidth: 300,
-        }}>
-          For the plants you're keeping alive,{' '}
-          the ones you're figuring out,{' '}
-          and the ones being dramatic{' '}
-          for no reason.
-        </div>
-
-        <Ornament style={{ marginBottom: 28 }} />
-
-        {/* LET'S GROW button — matches design exactly */}
-        <button
-          onClick={onNext}
-          style={{
-            width: '100%', maxWidth: 320,
-            padding: '18px 24px',
-            borderRadius: 14, border: '1px solid #3d5a2a',
-            background: '#2a3d1a',
-            color: '#c8b87a',
-            fontSize: 13, fontWeight: 700,
-            letterSpacing: '3px', textTransform: 'uppercase',
-            cursor: 'pointer', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: 12,
-            transition: 'background 0.2s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#354e20'}
-          onMouseLeave={e => e.currentTarget.style.background = '#2a3d1a'}
-        >
-          LET'S GROW <span style={{ fontSize: 16 }}>→</span>
-        </button>
-
-        {/* Bottom botanical ornament */}
-        <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 6, opacity: 0.5 }}>
-          <span style={{ fontSize: 12, color: '#4a6a2a' }}>🌿</span>
-          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <div style={{ width: 20, height: 1, background: '#c8922a', opacity: 0.4 }} />
-            <span style={{ color: '#c8922a', fontSize: 8 }}>✦</span>
-            <div style={{ width: 20, height: 1, background: '#c8922a', opacity: 0.4 }} />
+          <div style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 22, fontWeight: 700, color: '#e8dfc8',
+            marginBottom: 10, lineHeight: 1.2,
+          }}>
+            Welcome to ROOTED.
           </div>
-          <span style={{ fontSize: 12, color: '#4a6a2a' }}>🌿</span>
+
+          <Ornament style={{ marginBottom: 10 }} />
+
+          <div style={{
+            fontSize: 13, color: '#a09070', textAlign: 'center',
+            lineHeight: 1.7, marginBottom: 14, maxWidth: 300, margin: '0 auto 14px',
+          }}>
+            For the plants you're keeping alive, the ones you're figuring out, and the ones being dramatic for no reason.
+          </div>
+        </div>
+
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          <Ornament style={{ marginBottom: 2 }} />
+
+          {/* LET'S GROW button */}
+          <button
+            onClick={onNext}
+            style={{
+              width: '100%', maxWidth: 320,
+              padding: '16px 24px',
+              borderRadius: 14, border: '1px solid #3d5a2a',
+              background: '#2a3d1a', color: '#c8b87a',
+              fontSize: 12, fontWeight: 700,
+              letterSpacing: '3px', textTransform: 'uppercase',
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', gap: 12,
+              transition: 'background 0.2s',
+            }}
+          >
+            LET'S GROW <span style={{ fontSize: 15 }}>→</span>
+          </button>
+
+          {/* Bottom botanical ornament */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.5, marginTop: 2 }}>
+            <span style={{ fontSize: 11, color: '#4a6a2a' }}>🌿</span>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <div style={{ width: 16, height: 1, background: '#c8922a', opacity: 0.4 }} />
+              <span style={{ color: '#c8922a', fontSize: 7 }}>✦</span>
+              <div style={{ width: 16, height: 1, background: '#c8922a', opacity: 0.4 }} />
+            </div>
+            <span style={{ fontSize: 11, color: '#4a6a2a' }}>🌿</span>
+          </div>
         </div>
       </div>
     </div>
