@@ -1448,7 +1448,7 @@ export default function App() {
             </button>
           </div>
           {location && <div style={{ fontSize: 12, color: C.locText, background: C.locBg, padding: '6px 12px', borderRadius: 10, marginBottom: 14, border: `0.5px solid ${C.locBorder}`, display: 'inline-block' }}>📍 Tailored to {location.label}</div>}
-          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10 }}>{aiMode === 'id' ? 'Tell us what you're growing or trying to figure out.' : 'Describe the drama. Be specific.'}</div>
+          <div style={{ fontSize: 13, color: C.textMuted, marginBottom: 10 }}>{aiMode === 'id' ? "Tell us what you're growing or trying to figure out." : 'Describe the drama. Be specific.'}</div>
 
           {/* Photo upload for Plant ER */}
           <div style={{ marginBottom: 10 }}>
